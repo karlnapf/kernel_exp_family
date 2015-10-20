@@ -1,5 +1,3 @@
-from sklearn.cross_validation import KFold
-
 import numpy as np
 
 
@@ -254,19 +252,4 @@ def objective(X, theta, lmbda, omega, u, b=None, C=None):
     
     I = np.eye(len(theta))
     return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
-
-
-def xvalidate(Z, lmbda, omega, u, n_folds=5, num_repetitions=1):
-    Js = np.zeros((num_repetitions, n_folds))
-    
-    for j in range(num_repetitions):
-        kf = KFold(len(Z), n_folds=n_folds, shuffle=True)
-        for i, (train, test) in enumerate(kf):
-            # train
-            theta = score_matching_sym(Z[train], lmbda, omega, u)
-            
-            # evaluate
-            Js[j, i] = objective(Z[test], theta, lmbda, omega, u)
-    
-    return np.mean(Js, 0)
 

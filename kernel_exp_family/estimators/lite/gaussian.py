@@ -1,6 +1,5 @@
 from scipy.sparse.linalg.interface import LinearOperator
 from scipy.sparse.linalg.isolve.iterative import bicgstab
-from sklearn.cross_validation import KFold
 
 from kernel_exp_family.kernels.kernels import gaussian_kernel
 import numpy as np
