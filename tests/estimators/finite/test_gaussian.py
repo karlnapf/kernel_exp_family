@@ -4,7 +4,7 @@ from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.gaussian import feature_map_single,\
     feature_map, feature_map_derivative_d, feature_map_derivative2_d,\
-    feature_map_grad_single, score_matching, objective, compute_b, compute_C
+    feature_map_grad_single, fit, objective, compute_b, compute_C
 from kernel_exp_family.estimators.finite.gaussian_develop import feature_map_derivatives_loop,\
     feature_map_derivatives, feature_map_derivatives2_loop,\
     feature_map_derivatives2, compute_b_memory, compute_C_memory,\
@@ -167,7 +167,7 @@ def test_compute_C_1d2n():
     C = compute_C_memory(X, omega, u)
     assert_allclose(C_manual, C)
 
-def test_score_matching():
+def test_fit():
     N = 100
     D = 3
     m = 10
@@ -178,7 +178,7 @@ def test_score_matching():
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
     lmbda = 1.
-    theta = score_matching(X, lmbda, omega, u)
+    theta = fit(X, lmbda, omega, u)
     theta_manual = np.linalg.solve(C + np.eye(m) * lmbda, b)
     assert_allclose(theta, theta_manual)
 
@@ -299,7 +299,7 @@ def test_objective_sym_equals_half_manual():
     assert_close(J_manual, J)
 
 # import matplotlib.pyplot as plt
-def test_score_matching_returns_min_1d_grid():
+def test_fit_returns_min_1d_grid():
     N = 100
     D = 3
     m = 1
@@ -310,7 +310,7 @@ def test_score_matching_returns_min_1d_grid():
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
     lmbda = .001
-    theta = score_matching(X, lmbda, omega, u)
+    theta = fit(X, lmbda, omega, u)
     J = objective(X, theta, lmbda, omega, u, b, C)
     
     thetas_test = np.linspace(theta - 3, theta + 3)
@@ -328,7 +328,7 @@ def test_score_matching_returns_min_1d_grid():
     assert_almost_equal(Js.min(), J, delta=thetas_test[1] - thetas_test[0])
     assert_almost_equal(thetas_test[Js.argmin()], theta[0], delta=thetas_test[1] - thetas_test[0])
 
-def test_score_matching_returns_min_random_search():
+def test_fit_returns_min_random_search():
     N = 100
     D = 3
     m = 10
@@ -339,7 +339,7 @@ def test_score_matching_returns_min_random_search():
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
     lmbda = 1.
-    theta = score_matching(X, lmbda, omega, u)
+    theta = fit(X, lmbda, omega, u)
     J = objective(X, theta, lmbda, omega, u, b, C)
     
     for noise in [0.0001, 0.001, 0.1, 1, 10, 100]:

@@ -5,7 +5,7 @@ from numpy.testing.utils import assert_allclose
 from kernel_exp_family.estimators.lite.gaussian import _compute_b_sym, _compute_b_low_rank_sym, \
     _compute_C_sym, _apply_left_C_sym_low_rank, score_matching_sym, \
     score_matching_sym_low_rank, _objective_sym, _objective_sym_low_rank, \
-    _compute_b, _compute_C, score_matching, _apply_left_C_low_rank, \
+    _compute_b, _compute_C, fit, _apply_left_C_low_rank, \
     _compute_b_low_rank, _objective_low_rank, _objective, \
     score_matching_low_rank
 from kernel_exp_family.kernels.incomplete_cholesky import incomplete_cholesky_gaussian, \
@@ -307,7 +307,7 @@ def test_score_matching_matches_sym():
     Z = np.random.randn(100, 2)
     
     a_sym = score_matching_sym(Z, sigma, lmbda)
-    a = score_matching(Z, Z, sigma, lmbda)
+    a = fit(Z, Z, sigma, lmbda)
     
     assert_allclose(a, a_sym)
 
@@ -375,7 +375,7 @@ def test_score_matching_objective_matches_sym():
     
     K = gaussian_kernel(Z, sigma=sigma)
     J_sym = score_matching_sym(Z, sigma, lmbda, K)
-    J = score_matching(Z, Z, sigma, lmbda, K)
+    J = fit(Z, Z, sigma, lmbda, K)
     
     assert_allclose(J, J_sym)
 

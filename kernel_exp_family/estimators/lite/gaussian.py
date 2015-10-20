@@ -271,7 +271,7 @@ def score_matching_sym(Z, sigma, lmbda, K=None, b=None, C=None):
         
         return a
 
-def score_matching(X, Y, sigma, lmbda, K=None):
+def fit(X, Y, sigma, lmbda, K=None):
         # compute kernel matrix if needed
         if K is None:
             K = gaussian_kernel(X, Y, sigma=sigma)

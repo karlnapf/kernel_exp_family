@@ -120,7 +120,7 @@ def compute_C(X, omega, u):
 
     return C / N
 
-def score_matching(X, lmbda, omega, u, b=None, C=None):
+def fit(X, lmbda, omega, u, b=None, C=None):
     if b is None:
         b = compute_b(X, omega, u)
     
