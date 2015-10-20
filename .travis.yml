@@ -5,6 +5,8 @@ sudo: false
 addons:
   apt:
     packages:
+    - python-numpy
+    - python-scipy
     - python-matplotlib
 
 language: python
