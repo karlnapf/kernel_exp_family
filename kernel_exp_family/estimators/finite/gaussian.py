@@ -1,3 +1,4 @@
+from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
@@ -173,7 +174,7 @@ def objective(X, theta, lmbda, omega, u, b=None, C=None):
     I = np.eye(len(theta))
     return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
 
-class KernelExpFiniteGaussian():
+class KernelExpFiniteGaussian(EstimatorBase):
     def __init__(self, gamma, lmbda, m, D):
         self.gamma = gamma
         self.lmbda = lmbda
@@ -185,7 +186,10 @@ class KernelExpFiniteGaussian():
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        self.theta = fit(X, self.lmbda, self.omega, self.u)
+        self.b = compute_b(X, self.omega, self.u)
+        self.C = compute_C(X, self.omega, self.u)
+        
+        self.theta = fit(X, self.lmbda, self.omega, self.u, self.b, self.C)
     
     def log_pdf_single(self, x):
         if self.theta is None:
@@ -204,9 +208,14 @@ class KernelExpFiniteGaussian():
     def log_pdf(self, X):
         if self.theta is None:
             raise RuntimeError("Model not fitted yet.")
-        
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         Phi = feature_map(X, self.omega, self.u)
         return np.dot(Phi, self.theta)
     
+    def objective(self, X):
+        if self.theta is None:
+            raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, self.C)
