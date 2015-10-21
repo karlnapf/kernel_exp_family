@@ -1,0 +1,6 @@
+[report]
+omit =
+    *__init__.py
+    */python?.?/*
+    */site-packages/nose/*
+    estimator_oop.py
