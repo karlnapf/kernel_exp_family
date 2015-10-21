@@ -1,6 +1,3 @@
-# move to container based
-sudo: false
-
 language: python
 python:
   - "2.7"
@@ -11,11 +8,8 @@ virtualenv:
 notifications:
   email: false
 
-before_install:
-# I don't use this anymore since travis moved to docker containers, see below
-# - sudo apt-get install -qq python-numpy python-matplotlib gcc gfortran python-dev libblas-dev liblapack-dev cython libblas-dev libatlas-dev liblapack-dev python-coverage #python-scipy 
-
-# install necessary packages
+# new container based dependencies
+sudo: false
 addons:
   apt:
     packages:
@@ -23,13 +17,11 @@ addons:
     - python-scipy
     - python-matplotlib
 
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
  - pip install -r requirements.txt --use-mirrors
  - pip install coveralls
 
-# command to run tests, e.g. python setup.py test
-script:  python ~/kernel_exp_family/setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family
+script:  python setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family
 
 
 
