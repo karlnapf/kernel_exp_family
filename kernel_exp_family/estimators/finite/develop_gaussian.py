@@ -1,9 +1,9 @@
 from kernel_exp_family.estimators.finite.gaussian import feature_map,\
-    feature_map_derivative2_d, feature_map_derivative_d
+    feature_map_grad2_d, feature_map_grad_d, feature_map_grad2, feature_map_grad
 import numpy as np
 
 
-def feature_map_derivatives_loop(X, omega, u):
+def feature_map_grad_loop(X, omega, u):
     m = 1 if np.isscalar(u) else len(u)
     N = X.shape[0]
     D = X.shape[1]
@@ -18,7 +18,7 @@ def feature_map_derivatives_loop(X, omega, u):
     projections *= -np.sqrt(2. / m)
     return projections
 
-def feature_map_derivatives2_loop(X, omega, u):
+def feature_map_grad2_loop(X, omega, u):
     m = 1 if np.isscalar(u) else len(u)
     N = X.shape[0]
     D = X.shape[1]
@@ -30,12 +30,6 @@ def feature_map_derivatives2_loop(X, omega, u):
         projections[d, :, :] *= omega[d, :] ** 2
         
     return projections
-
-def feature_map_derivatives(X, omega, u):
-    return feature_map_derivatives_loop(X, omega, u)
-
-def feature_map_derivatives2(X, omega, u):
-    return feature_map_derivatives2_loop(X, omega, u)
 
 def _objective_sym_completely_manual(X, theta, lmbda, omega, u):
     N = X.shape[0]
@@ -65,10 +59,10 @@ def _objective_sym_half_manual(X, theta, lmbda, omega, u):
      
     for n in range(N):
         for d in range(D):
-            b_term = -feature_map_derivative2_d(X[n], omega, u, d)
+            b_term = -feature_map_grad2_d(X[n], omega, u, d)
             J_manual -= np.dot(b_term, theta)
 
-            c_vec = feature_map_derivative_d(X[n], omega, u, d)
+            c_vec = feature_map_grad_d(X[n], omega, u, d)
             C_term_manual = np.outer(c_vec, c_vec)
             J_manual += 0.5 * np.dot(theta, np.dot(C_term_manual, theta))
     
@@ -78,12 +72,12 @@ def _objective_sym_half_manual(X, theta, lmbda, omega, u):
 
 def compute_b_memory(X, omega, u):
     assert len(X.shape) == 2
-    Phi1 = feature_map_derivatives2(X, omega, u)
+    Phi1 = feature_map_grad2(X, omega, u)
     return -np.mean(np.sum(Phi1, 0), 0)
 
 def compute_C_memory(X, omega, u):
     assert len(X.shape) == 2
-    Phi2 = feature_map_derivatives(X, omega, u)
+    Phi2 = feature_map_grad(X, omega, u)
     d = X.shape[1]
     N = X.shape[0]
     m = Phi2.shape[2]

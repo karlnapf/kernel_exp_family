@@ -2,12 +2,12 @@ from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.develop_gaussian import feature_map_derivatives_loop,\
-    feature_map_derivatives, feature_map_derivatives2_loop,\
-    feature_map_derivatives2, compute_b_memory, compute_C_memory,\
+from kernel_exp_family.estimators.finite.develop_gaussian import feature_map_grad_loop,\
+    feature_map_grad, feature_map_grad2_loop,\
+    feature_map_grad2, compute_b_memory, compute_C_memory,\
     _objective_sym_completely_manual, _objective_sym_half_manual
 from kernel_exp_family.estimators.finite.gaussian import feature_map_single,\
-    feature_map, feature_map_derivative_d, feature_map_derivative2_d,\
+    feature_map, feature_map_grad_d, feature_map_grad2_d,\
     feature_map_grad_single, fit, objective, compute_b, compute_C
 import numpy as np
 
@@ -39,7 +39,7 @@ def test_feature_map_derivative_d_1n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    phi_derivative = feature_map_derivative_d(X, omega, u, d)
+    phi_derivative = feature_map_grad_d(X, omega, u, d)
     phi_derivative_manual = -np.sin(X * omega + u) * omega[:, d] * np.sqrt(2.)
     assert_close(phi_derivative, phi_derivative_manual)
 
@@ -48,7 +48,7 @@ def test_feature_map_derivative_d_2n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    phi_derivative = feature_map_derivative_d(X, omega, u, d)
+    phi_derivative = feature_map_grad_d(X, omega, u, d)
     phi_derivative_manual = -np.sin(X * omega + u) * omega[:, d] * np.sqrt(2.)
     assert_close(phi_derivative, phi_derivative_manual)
 
@@ -57,7 +57,7 @@ def test_feature_map_derivative2_d():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    phi_derivative2 = feature_map_derivative2_d(X, omega, u, d)
+    phi_derivative2 = feature_map_grad2_d(X, omega, u, d)
     phi_derivative2_manual = -feature_map(X, omega, u) * (omega[:, d] ** 2)
     assert_close(phi_derivative2, phi_derivative2_manual)
 
@@ -69,10 +69,10 @@ def test_feature_map_derivatives_loop_equals_map_derivative_d():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     
-    derivatives = feature_map_derivatives_loop(X, omega, u)
+    derivatives = feature_map_grad_loop(X, omega, u)
     
     for d in range(D):
-        derivative = feature_map_derivative_d(X, omega, u, d)
+        derivative = feature_map_grad_d(X, omega, u, d)
         assert_allclose(derivatives[d], derivative)
 
 def test_feature_map_derivatives_equals_feature_map_derivatives_loop():
@@ -83,8 +83,8 @@ def test_feature_map_derivatives_equals_feature_map_derivatives_loop():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     
-    derivatives = feature_map_derivatives(X, omega, u)
-    derivatives_loop = feature_map_derivatives_loop(X, omega, u)
+    derivatives = feature_map_grad(X, omega, u)
+    derivatives_loop = feature_map_grad_loop(X, omega, u)
     
     assert_allclose(derivatives_loop, derivatives)
 
@@ -96,10 +96,10 @@ def test_feature_map_derivatives2_loop_equals_map_derivative2_d():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     
-    derivatives = feature_map_derivatives2_loop(X, omega, u)
+    derivatives = feature_map_grad2_loop(X, omega, u)
     
     for d in range(D):
-        derivative = feature_map_derivative2_d(X, omega, u, d)
+        derivative = feature_map_grad2_d(X, omega, u, d)
         assert_allclose(derivatives[d], derivative)
 
 def test_feature_map_derivatives2_equals_feature_map_derivatives2_loop():
@@ -110,8 +110,8 @@ def test_feature_map_derivatives2_equals_feature_map_derivatives2_loop():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     
-    derivatives = feature_map_derivatives2(X, omega, u)
-    derivatives_loop = feature_map_derivatives2_loop(X, omega, u)
+    derivatives = feature_map_grad2(X, omega, u)
+    derivatives_loop = feature_map_grad2_loop(X, omega, u)
     
     assert_allclose(derivatives_loop, derivatives)
 
@@ -126,7 +126,7 @@ def test_feature_map_grad_single_equals_feature_map_derivative_d():
     
     grad_manual = np.zeros((D, m))
     for d in range(D):
-        grad_manual[d, :] = feature_map_derivative_d(x, omega, u, d)
+        grad_manual[d, :] = feature_map_grad_d(x, omega, u, d)
     
     assert_allclose(grad_manual, grad)
 
@@ -135,7 +135,7 @@ def test_compute_b_storage_1d1n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    b_manual = -feature_map_derivative2_d(X, omega, u, d).flatten()
+    b_manual = -feature_map_grad2_d(X, omega, u, d).flatten()
     b = compute_b_memory(X, omega, u)
     assert_allclose(b_manual, b)
 
@@ -144,7 +144,7 @@ def test_compute_b_storage_1d2n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    b_manual = -np.mean(feature_map_derivative2_d(X, omega, u, d))
+    b_manual = -np.mean(feature_map_grad2_d(X, omega, u, d))
     b = compute_b_memory(X, omega, u)
     assert_allclose(b_manual, b)
 
@@ -153,7 +153,7 @@ def test_compute_C_1d1n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    phi = feature_map_derivative_d(X, omega, u, d).flatten()
+    phi = feature_map_grad_d(X, omega, u, d).flatten()
     C_manual = np.outer(phi, phi)
     C = compute_C_memory(X, omega, u)
     assert_allclose(C_manual, C)
@@ -163,7 +163,7 @@ def test_compute_C_1d2n():
     u = np.array([2.])
     omega = np.array([[2.]])
     d = 0
-    C_manual = np.mean(feature_map_derivative_d(X, omega, u, d) ** 2)
+    C_manual = np.mean(feature_map_grad_d(X, omega, u, d) ** 2)
     C = compute_C_memory(X, omega, u)
     assert_allclose(C_manual, C)
 
@@ -235,14 +235,14 @@ def test_objective_sym_equals_completely_manual_manually():
         J_n_manual = 0.
         for d in range(D):
             b_term_manual = -np.sqrt(2. / m) * np.cos(np.dot(X[n], omega) + u) * (omega[d, :] ** 2)
-            b_term = feature_map_derivative2_d(X[n], omega, u, d)
+            b_term = feature_map_grad2_d(X[n], omega, u, d)
             assert_allclose(b_term_manual, b_term)
             b_manual -= b_term_manual
             J_manual += np.dot(b_term_manual, theta)
             J_n_manual += np.dot(b_term_manual, theta)
              
             c_vec_manual = -np.sqrt(2. / m) * np.sin(np.dot(X[n], omega) + u) * omega[d, :]
-            c_vec = feature_map_derivative_d(X[n], omega, u, d)
+            c_vec = feature_map_grad_d(X[n], omega, u, d)
             assert_allclose(c_vec_manual, c_vec)
             C_term = np.outer(c_vec_manual, c_vec_manual)
             C_manual += C_term

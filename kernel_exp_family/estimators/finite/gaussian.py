@@ -1,3 +1,4 @@
+from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
 
@@ -66,7 +67,7 @@ def feature_map(X, omega, u):
     projection *= np.sqrt(2. / m)
     return projection
 
-def feature_map_derivative_d(X, omega, u, d):
+def feature_map_grad_d(X, omega, u, d):
     m = 1 if np.isscalar(u) else len(u)
     
     projection = np.dot(X, omega) + u
@@ -76,18 +77,50 @@ def feature_map_derivative_d(X, omega, u, d):
     projection *= np.sqrt(2. / m)
     return -projection
 
-def feature_map_derivative2_d(X, omega, u, d):
+def feature_map_grad2_d(X, omega, u, d):
     Phi2 = feature_map(X, omega, u)
     Phi2 *= omega[d, :] ** 2
     
     return -Phi2
+
+def feature_map_grad(X, omega, u):
+    # equal to the looped version, feature_map_grad_loop
+    # TODO make more effecient via vectorising
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    projections = np.zeros((D, N, m))
+    projection = np.dot(X, omega) + u
+    np.sin(projection, projection)
+    for d in range(D):
+        projections[d, :, :] = projection
+        projections[d, :, :] *= omega[d, :]
+    
+    projections *= -np.sqrt(2. / m)
+    return projections
+
+def feature_map_grad2(X, omega, u):
+    # equal to the looped version, feature_map_grad2_loop
+    # TODO make more effecient via vectorising
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    projections = np.zeros((D, N, m))
+    Phi2 = feature_map(X, omega, u)
+    for d in range(D):
+        projections[d, :, :] = -Phi2
+        projections[d, :, :] *= omega[d, :] ** 2
+        
+    return projections
 
 def feature_map_grad_single(x, omega, u):
     D, m = omega.shape
     grad = np.zeros((D, m))
     
     for d in range(D):
-        grad[d, :] = feature_map_derivative_d(x, omega, u, d)
+        grad[d, :] = feature_map_grad_d(x, omega, u, d)
     
     return grad
 
@@ -140,3 +173,40 @@ def objective(X, theta, lmbda, omega, u, b=None, C=None):
     I = np.eye(len(theta))
     return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
 
+class KernelExpFiniteGaussian():
+    def __init__(self, gamma, lmbda, m, D):
+        self.gamma = gamma
+        self.lmbda = lmbda
+        self.m = m
+        self.D = D
+        self.omega, self.u = sample_basis(D, m, gamma)
+        self.theta = None
+    
+    def fit(self, X):
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        self.theta = fit(X, self.lmbda, self.omega, self.u)
+    
+    def log_pdf_single(self, x):
+        if self.theta is None:
+            raise RuntimeError("Model not fitted yet.")
+        
+        phi = feature_map_single(x, self.omega, self.u)
+        return np.dot(phi, self.theta)
+    
+    def grad_single(self, x):
+        if self.theta is None:
+            raise RuntimeError("Model not fitted yet.")
+        
+        grad = feature_map_grad_single(x, self.omega, self.u)
+        return np.dot(grad, self.theta)
+    
+    def log_pdf(self, X):
+        if self.theta is None:
+            raise RuntimeError("Model not fitted yet.")
+        
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        Phi = feature_map(X, self.omega, self.u)
+        return np.dot(Phi, self.theta)
+    
