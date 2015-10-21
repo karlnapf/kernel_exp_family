@@ -1,6 +1,8 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
-import numpy as np
+from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 def get_KernelExpFiniteGaussian_instance(D):
     # arbitrary choice of parameters here
@@ -8,6 +10,12 @@ def get_KernelExpFiniteGaussian_instance(D):
     lmbda = 0.000001
     m = 100
     return KernelExpFiniteGaussian(gamma, lmbda, m, D)
+
+def get_KernelExpLiteGaussian_instance(D):
+    # arbitrary choice of parameters here
+    sigma = 1.
+    lmbda = 0.000001
+    return KernelExpLiteGaussian(sigma, lmbda, D)
 
 def visualise_array(Xs, Ys, A, samples=None):
     im = plt.imshow(A, origin='lower')
@@ -33,8 +41,9 @@ if __name__ == '__main__':
     # fit model to samples from a standard Gaussian
     X = np.random.randn(N, D)
     
-    # estimator API object
+    # estimator API object, try different estimators here
     est = get_KernelExpFiniteGaussian_instance(D)
+    est = get_KernelExpLiteGaussian_instance(D)
     est.fit(X)
     
     # main interface for log pdf and gradient

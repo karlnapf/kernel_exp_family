@@ -1,5 +1,9 @@
-from kernel_exp_family.kernels.kernels import gaussian_kernel
+from kernel_exp_family.estimators.estimator_oop import EstimatorBase
+from kernel_exp_family.kernels.kernels import gaussian_kernel, \
+    gaussian_kernel_grad
+from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
+
 
 def compute_b(X, Y, K_XY, sigma):
     assert X.shape[1] == Y.shape[1]
@@ -95,3 +99,49 @@ def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None):
     J = first + second
     return J
 
+class KernelExpLiteGaussian(EstimatorBase):
+    def __init__(self, sigma, lmbda, D):
+        self.sigma = sigma
+        self.lmbda = lmbda
+        self.D = D
+        self.alpha = None
+    
+    def fit(self, X):
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        self.X = np.copy(X)
+        self.K = gaussian_kernel(X, sigma=self.sigma)
+        
+        self.alpha = fit(X, X, self.sigma, self.lmbda, self.K)
+        
+    
+    def log_pdf(self, x):
+        if self.alpha is None:
+            raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(x, ndim=1, dims={0: self.D})
+        
+        k = gaussian_kernel(self.X, x.reshape(1, self.D), self.sigma)[:, 0]
+        return np.dot(self.alpha, k)
+    
+    def grad(self, x):
+        if self.alpha is None:
+            raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(x, ndim=1, dims={0: self.D})
+    
+        k = gaussian_kernel_grad(x, self.X)
+        return np.dot(self.alpha, k)
+    
+    def log_pdf_multiple(self, X):
+        if self.alpha is None:
+            raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        k = gaussian_kernel(self.X, X, self.sigma)
+        return np.dot(self.alpha, k)
+    
+    def objective(self, X):
+        if self.alpha is None:
+            raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(X, ndim=2, dims={1: self.D})
+        
+        return objective(self.X, X, self.sigma, self.lmbda, self.alpha, self.K)

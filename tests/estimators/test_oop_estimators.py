@@ -1,6 +1,7 @@
 from nose.tools import assert_raises
 
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
+from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import numpy as np
 
 
@@ -11,9 +12,16 @@ def get_instace_KernelExpFiniteGaussian():
     D = 2
     return KernelExpFiniteGaussian(gamma, lmbda, m, D)
 
+def get_instace_KernelExpLiteGaussian():
+    sigma = 2.
+    lmbda = 1.
+    D = 2
+    return KernelExpLiteGaussian(sigma, lmbda, D)
+
 def get_estimator_instances():
     return [
-            get_instace_KernelExpFiniteGaussian()
+            get_instace_KernelExpFiniteGaussian(),
+            get_instace_KernelExpLiteGaussian()
             ]
 
 def test_fit_execute():

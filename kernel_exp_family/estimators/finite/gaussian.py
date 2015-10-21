@@ -194,6 +194,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
     def log_pdf(self, x):
         if self.theta is None:
             raise RuntimeError("Model not fitted yet.")
+        assert_array_shape(x, ndim=1, dims={0: self.D})
         
         phi = feature_map_single(x, self.omega, self.u)
         return np.dot(phi, self.theta)
