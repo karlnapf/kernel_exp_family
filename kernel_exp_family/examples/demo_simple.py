@@ -26,7 +26,6 @@ if __name__ == '__main__':
     # simple standard Gaussian target
     X = np.random.randn(N, D)
     
-    
     # estimator API object
     est = get_KernelExpFiniteGaussian_instance(D)
     est.fit(X)
@@ -60,11 +59,11 @@ if __name__ == '__main__':
     
     plt.subplot(221)
     visualise_array(Xs, Ys, D, X)
-    plt.title("log pdf")
+    plt.title("estimate log pdf")
     
     plt.subplot(222)
     visualise_array(Xs, Ys, G, X)
-    plt.title("gradient norm")
+    plt.title("estimate gradient norm")
     
     plt.subplot(223)
     visualise_array(Xs, Ys, D_true, X)
