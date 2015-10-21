@@ -1,7 +1,13 @@
+import matplotlib
+
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
 import numpy as np
+
+# for making examples work server
+matplotlib.use('Agg')
+
 
 
 def get_KernelExpFiniteGaussian_instance(D):
