@@ -62,29 +62,29 @@ def test_fit_wrong_input_dim():
         X = np.random.randn(N, est.D + 1)
         assert_raises(ValueError, est.fit, X)
 
-def test_log_pdf_execute():
+def test_log_pdf_multiple_execute():
     N = 100
     estimators = get_estimator_instances()
     
     for est in estimators:
         X = np.random.randn(N, est.D)
         est.fit(X)
-        est.log_pdf(X)
+        est.log_pdf_multiple(X)
 
-def test_log_pdf_result():
+def test_log_pdf_multiple_result():
     N = 100
     estimators = get_estimator_instances()
     
     for est in estimators:
         X = np.random.randn(N, est.D)
         est.fit(X)
-        result = est.log_pdf(X)
+        result = est.log_pdf_multiple(X)
         
         assert type(result) is np.ndarray
         assert result.ndim == 1
         assert len(result) == len(X)
 
-def test_log_pdf_wrong_before_fit():
+def test_log_pdf_multiple_wrong_before_fit():
     N = 100
     estimators = get_estimator_instances()
     
@@ -92,9 +92,9 @@ def test_log_pdf_wrong_before_fit():
         X = np.random.randn(N, est.D)
         
         for est in estimators:
-            assert_raises(RuntimeError, est.log_pdf, X)
+            assert_raises(RuntimeError, est.log_pdf_multiple, X)
 
-def test_log_pdf_wrong_input_type():
+def test_log_pdf_multiple_wrong_input_type():
     N = 10
     estimators = get_estimator_instances()
     
@@ -102,6 +102,69 @@ def test_log_pdf_wrong_input_type():
         X = np.random.randn(N, est.D)
         est.fit(X)
         
+        assert_raises(TypeError, est.log_pdf_multiple, None)
+
+def test_log_pdf_multiple_wrong_input_shape():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        Y = np.random.randn(N, est.D + 1)
+        
+        est.fit(X)
+        assert_raises(ValueError, est.log_pdf_multiple, Y)
+
+def test_log_pdf_multiple_wrong_input_dim():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        Y = np.random.randn(N, est.D + 1)
+        
+        est.fit(X)
+        assert_raises(ValueError, est.log_pdf_multiple, Y)
+
+def test_log_pdf_execute():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        x = np.random.randn(est.D)
+        est.fit(X)
+        est.log_pdf(x)
+
+def test_log_pdf_result():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        x = np.random.randn(est.D)
+        est.fit(X)
+        result = est.log_pdf(x)
+        
+        assert type(result) is np.float64
+
+def test_log_pdf_wrong_before_fit():
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        x = np.random.randn(est.D)
+        
+        for est in estimators:
+            assert_raises(RuntimeError, est.log_pdf, x)
+
+def test_log_pdf_wrong_input_type():
+    N = 10
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        
+        est.fit(X)
         assert_raises(TypeError, est.log_pdf, None)
 
 def test_log_pdf_wrong_input_shape():
@@ -110,10 +173,10 @@ def test_log_pdf_wrong_input_shape():
     
     for est in estimators:
         X = np.random.randn(N, est.D)
-        Y = np.random.randn(N, est.D + 1)
+        x = np.random.randn(est.D + 1)
         
         est.fit(X)
-        assert_raises(ValueError, est.log_pdf, Y)
+        assert_raises(ValueError, est.log_pdf, x)
 
 def test_log_pdf_wrong_input_dim():
     N = 100
@@ -121,75 +184,12 @@ def test_log_pdf_wrong_input_dim():
     
     for est in estimators:
         X = np.random.randn(N, est.D)
-        Y = np.random.randn(N, est.D + 1)
-        
-        est.fit(X)
-        assert_raises(ValueError, est.log_pdf, Y)
-
-def test_log_pdf_single_execute():
-    N = 100
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        x = np.random.randn(est.D)
-        est.fit(X)
-        est.log_pdf_single(x)
-
-def test_log_pdf_single_result():
-    N = 100
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        x = np.random.randn(est.D)
-        est.fit(X)
-        result = est.log_pdf_single(x)
-        
-        assert type(result) is np.float64
-
-def test_log_pdf_single_wrong_before_fit():
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        x = np.random.randn(est.D)
-        
-        for est in estimators:
-            assert_raises(RuntimeError, est.log_pdf_single, x)
-
-def test_log_pdf_single_wrong_input_type():
-    N = 10
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        
-        est.fit(X)
-        assert_raises(TypeError, est.log_pdf_single, None)
-
-def test_log_pdf_single_wrong_input_shape():
-    N = 100
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
         x = np.random.randn(est.D + 1)
         
         est.fit(X)
-        assert_raises(ValueError, est.log_pdf_single, x)
+        assert_raises(ValueError, est.log_pdf, x)
 
-def test_log_pdf_single_wrong_input_dim():
-    N = 100
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        x = np.random.randn(est.D + 1)
-        
-        est.fit(X)
-        assert_raises(ValueError, est.log_pdf_single, x)
-
-def test_grad_single_execute():
+def test_grad_execute():
     N = 100
     estimators = get_estimator_instances()
     
@@ -197,9 +197,9 @@ def test_grad_single_execute():
         X = np.random.randn(N, est.D)
         x = np.random.randn(est.D)
         est.fit(X)
-        est.grad_single(x)
+        est.grad(x)
 
-def test_grad_single_result():
+def test_grad_result():
     N = 100
     estimators = get_estimator_instances()
     
@@ -207,22 +207,22 @@ def test_grad_single_result():
         X = np.random.randn(N, est.D)
         x = np.random.randn(est.D)
         est.fit(X)
-        result = est.grad_single(x)
+        result = est.grad(x)
         
         assert type(result) is np.ndarray
         assert result.ndim == 1
         assert len(result) == est.D
 
-def test_grad_single_wrong_before_fit():
+def test_grad_wrong_before_fit():
     estimators = get_estimator_instances()
     
     for est in estimators:
         x = np.random.randn(est.D)
         
         for est in estimators:
-            assert_raises(RuntimeError, est.grad_single, x)
+            assert_raises(RuntimeError, est.grad, x)
 
-def test_grad_single_wrong_input_type():
+def test_grad_wrong_input_type():
     N = 10
     estimators = get_estimator_instances()
     
@@ -230,9 +230,9 @@ def test_grad_single_wrong_input_type():
         X = np.random.randn(N, est.D)
         
         est.fit(X)
-        assert_raises(TypeError, est.grad_single, None)
+        assert_raises(TypeError, est.grad, None)
 
-def test_grad_single_wrong_input_shape():
+def test_grad_wrong_input_shape():
     N = 100
     estimators = get_estimator_instances()
     
@@ -241,9 +241,9 @@ def test_grad_single_wrong_input_shape():
         x = np.random.randn(est.D + 1)
         
         est.fit(X)
-        assert_raises(ValueError, est.grad_single, x)
+        assert_raises(ValueError, est.grad, x)
 
-def test_grad_single_wrong_input_dim():
+def test_grad_wrong_input_dim():
     N = 100
     estimators = get_estimator_instances()
     
@@ -252,7 +252,7 @@ def test_grad_single_wrong_input_dim():
         x = np.random.randn(est.D + 1)
         
         est.fit(X)
-        assert_raises(ValueError, est.grad_single, x)
+        assert_raises(ValueError, est.grad, x)
 
 def test_objective_execute():
     N = 100

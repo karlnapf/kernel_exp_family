@@ -5,13 +5,13 @@ class EstimatorBase(object):
     def fit(self, X):
         raise NotImplementedError()
     
-    def log_pdf(self, X):
+    def log_pdf_multiple(self, X):
         raise NotImplementedError()
     
-    def log_pdf_single(self, x):
+    def log_pdf(self, x):
         raise NotImplementedError()
     
-    def grad_single(self, x):
+    def grad(self, x):
         raise NotImplementedError()
     
     def objective(self, X):
