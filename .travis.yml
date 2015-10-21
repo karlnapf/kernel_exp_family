@@ -25,5 +25,5 @@ install:
 script:  python setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family
 
 after_success:
-  coveralls
-  sh examples/run_all.sh
+  - coveralls
+  - sh examples/run_all.sh
