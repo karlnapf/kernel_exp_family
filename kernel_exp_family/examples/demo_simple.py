@@ -20,10 +20,17 @@ def visualise_array(Xs, Ys, A, samples=None):
     plt.xlim([Xs.min(), Xs.max()])
 
 if __name__ == '__main__':
+    """
+    This simple demo demonstrates how to use the the object-oriented API.
+    We fit our model to a simple 2D Gaussian, and plot the results.
+    You can play around with different estimators in the code below and see how
+    they behave.
+    Note that we do not cover parameter choice in this demo.
+    """
     N = 200
     D = 2
     
-    # simple standard Gaussian target
+    # fit model to samples from a standard Gaussian
     X = np.random.randn(N, D)
     
     # estimator API object
@@ -34,6 +41,8 @@ if __name__ == '__main__':
     print est.log_pdf_multiple(np.random.randn(2,2))
     print est.log_pdf(np.zeros(D))
     print est.grad(np.zeros(D))
+    
+    # score matching objective function (can be used for parameter tuning)
     print est.objective(X)
     
     # compute log-pdf and gradients over a grid and visualise
@@ -51,6 +60,7 @@ if __name__ == '__main__':
             D[j,i] = est.log_pdf(point)
             G[j,i] = np.linalg.norm(est.grad(point))
             
+            # this is the true log-pdf of the simple Gaussian target
             D_true[j,i] = -0.5 * np.dot(point, point)
             G_true[j,i] = np.linalg.norm(point)
     
