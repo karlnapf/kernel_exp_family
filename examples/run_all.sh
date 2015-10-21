@@ -1,1 +1,1 @@
-find examples/ -type f -name '*.py' | xargs python
+find examples/ -type f -name '*.py' -print0 | xargs python
