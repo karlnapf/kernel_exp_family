@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def get_KernelExpFiniteGaussian_instance(D):
-    # arbritary choice of parameters here
+    # arbitrary choice of parameters here
     gamma = 0.5
     lmbda = 0.000001
     m = 100
