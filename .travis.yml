@@ -26,8 +26,12 @@ addons:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
  - pip install -r requirements.txt --use-mirrors
- - pip install -r coveralls
+ - pip install coveralls
 
 # command to run tests, e.g. python setup.py test
-script:  export PYTHONPATH=$PYTHONPATH:~/kernel_exp_family && nosetests
+script:  export PYTHONPATH=$PYTHONPATH:~/kernel_exp_family && nosetests --with-coverage --cover-package=kernel_exp_family
 
+
+
+after_success:
+  coveralls
