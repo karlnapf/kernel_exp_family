@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-
-
 def get_KernelExpFiniteGaussian_instance(D):
     # arbitrary choice of parameters here
     gamma = 0.5
