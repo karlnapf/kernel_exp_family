@@ -2,13 +2,13 @@ from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.gaussian import feature_map_single,\
-    feature_map, feature_map_derivative_d, feature_map_derivative2_d,\
-    feature_map_grad_single, fit, objective, compute_b, compute_C
-from kernel_exp_family.estimators.finite.gaussian_develop import feature_map_derivatives_loop,\
+from kernel_exp_family.estimators.finite.develop_gaussian import feature_map_derivatives_loop,\
     feature_map_derivatives, feature_map_derivatives2_loop,\
     feature_map_derivatives2, compute_b_memory, compute_C_memory,\
     _objective_sym_completely_manual, _objective_sym_half_manual
+from kernel_exp_family.estimators.finite.gaussian import feature_map_single,\
+    feature_map, feature_map_derivative_d, feature_map_derivative2_d,\
+    feature_map_grad_single, fit, objective, compute_b, compute_C
 import numpy as np
 
 
