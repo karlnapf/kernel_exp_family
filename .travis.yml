@@ -22,7 +22,10 @@ install:
  - pip install -r requirements.txt --use-mirrors
  - pip install coveralls
 
-script:  python setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family && cd examples; sh run_all.sh; cd ..
+script: 
+  - python setup.py install
+  - nosetests --with-coverage --cover-package=kernel_exp_family
+  - cd examples; sh run_all.sh; cd ..
 
 after_success:
   - coveralls
