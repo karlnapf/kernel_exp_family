@@ -1,9 +1,6 @@
 # for making examples work server
 import matplotlib; matplotlib.use('Agg')
 
-import sys
-print(sys.path)
-
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
@@ -53,12 +50,12 @@ if __name__ == '__main__':
     est.fit(X)
     
     # main interface for log pdf and gradient
-    log_pdfs = est.log_pdf_multiple(np.random.randn(2, 2))
-    log_pdf = est.log_pdf(np.zeros(D))
-    grad = est.grad(np.zeros(D))
+    print est.log_pdf_multiple(np.random.randn(2, 2))
+    print est.log_pdf(np.zeros(D))
+    print est.grad(np.zeros(D))
     
     # score matching objective function (can be used for parameter tuning)
-    o = est.objective(X)
+    print est.objective(X)
     
     # compute log-pdf and gradients over a grid and visualise
     Xs = np.linspace(-5, 5)
