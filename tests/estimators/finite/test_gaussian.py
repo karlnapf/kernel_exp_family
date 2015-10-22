@@ -2,7 +2,7 @@ from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.develop_gaussian import feature_map_grad_loop,\
+from kernel_exp_family.estimators.finite.develop.gaussian import feature_map_grad_loop,\
     feature_map_grad, feature_map_grad2_loop,\
     feature_map_grad2, compute_b_memory, compute_C_memory,\
     _objective_sym_completely_manual, _objective_sym_half_manual

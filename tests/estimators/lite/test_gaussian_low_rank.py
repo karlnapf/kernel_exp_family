@@ -7,9 +7,9 @@ from kernel_exp_family.kernels.incomplete_cholesky import incomplete_cholesky_ga
 from kernel_exp_family.kernels.kernels import gaussian_kernel
 
 import kernel_exp_family.estimators.lite.gaussian as gaussian
-import kernel_exp_family.estimators.lite.develop_gaussian as develop_gaussian
+import kernel_exp_family.estimators.lite.develop.gaussian as develop_gaussian
 import kernel_exp_family.estimators.lite.gaussian_low_rank as gaussian_low_rank
-import kernel_exp_family.estimators.lite.develop_gaussian_low_rank as develop_gaussian_low_rank
+import kernel_exp_family.estimators.lite.develop.gaussian_low_rank as develop_gaussian_low_rank
 
 
 import numpy as np

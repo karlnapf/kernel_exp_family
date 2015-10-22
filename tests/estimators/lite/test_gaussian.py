@@ -2,7 +2,7 @@ from nose.tools import assert_almost_equal, assert_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-import kernel_exp_family.estimators.lite.develop_gaussian as develop_gaussian
+import kernel_exp_family.estimators.lite.develop.gaussian as develop_gaussian
 import kernel_exp_family.estimators.lite.gaussian as gaussian
 from kernel_exp_family.kernels.kernels import gaussian_kernel
 import numpy as np
