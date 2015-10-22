@@ -81,8 +81,8 @@ def test_incomplete_cholesky_3():
     assert_equal(R.shape, (len(I), (len(X))))
     assert_equal(W.shape, (len(I), (len(X))))
      
-    assert_less_equal(np.linalg.norm(K - R.T.dot(R)), .5)
-    assert_less_equal(np.linalg.norm(K - W.T.dot(K_chol.dot(W))), .5)
+    assert_less_equal(np.linalg.norm(K - R.T.dot(R)), .6)
+    assert_less_equal(np.linalg.norm(K - W.T.dot(K_chol.dot(W))), .6)
 
 def test_incomplete_cholesky_check_given_rank():
     kernel = lambda X, Y = None : gaussian_kernel(X, Y, sigma=20.)
