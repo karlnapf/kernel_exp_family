@@ -1,13 +1,16 @@
+from abc import abstractmethod
+
 from kernel_exp_family.tools.assertions import assert_array_shape,\
     assert_positive_int
+from kernel_exp_family.tools.xvalidation import XVal
 import numpy as np
-from numpy import setdiff1d
 
 
 class EstimatorBase(object):
     def __init__(self, D):
         self.D = D
     
+    @abstractmethod
     def fit(self, X):
         raise NotImplementedError()
     
@@ -20,11 +23,21 @@ class EstimatorBase(object):
     def grad(self, x):
         raise NotImplementedError()
     
+    @abstractmethod
     def objective(self, X):
         raise NotImplementedError()
     
-    def xvalidate_objective(self, X, num_folds=5, num_repetitions=1, return_variance=False):
+    def xvalidate_objective(self, X, num_folds=5, num_repetitions=1):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         assert_positive_int(num_folds)
         assert_positive_int(num_repetitions)
         
+        O = np.zeros((num_repetitions, num_folds))
+        for i in range(num_repetitions):
+            
+            xval = XVal(N=len(X), num_folds=num_folds)
+            for j, (train,test) in enumerate(xval):
+                self.fit(X[train])
+                O[i,j] = self.objective(X[test])
+        
+        return O

@@ -323,3 +323,61 @@ def test_objective_wrong_input_dim():
         
         est.fit(X)
         assert_raises(ValueError, est.objective, Y)
+
+def test_xvalidate_objective_execute():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        
+        est.xvalidate_objective(X, num_folds=3, num_repetitions=1)
+
+def test_xvalidate_objective_result():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        
+        result = est.xvalidate_objective(X, num_folds=3, num_repetitions=2)
+        
+        assert type(result) is np.ndarray
+        assert result.ndim == 2
+        assert result.shape[0] == 2
+        assert result.shape[1] == 3
+
+def test_xvalidate_objective_wrong_input_type():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        assert_raises(TypeError, est.xvalidate_objective, X=None, num_folds=3, num_repetitions=2)
+        assert_raises(TypeError, est.xvalidate_objective, X=X, num_folds=None, num_repetitions=2)
+        assert_raises(TypeError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=None)
+        
+def test_xvalidate_objective_wrong_input_dim_X():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D, 1)
+        assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=2)
+
+def test_xvalidate_objective_wrong_input_shape_X():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D + 1)
+        assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=2)
+
+def test_xvalidate_objective_wrong_input_negative_int():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D + 1)
+        assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=0, num_repetitions=2)
+        assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=0)
