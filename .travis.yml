@@ -22,7 +22,7 @@ install:
  - pip install -r requirements.txt --use-mirrors
  - pip install coveralls
 
-script:  export PYTHONPATH=$PYTHONPATH:/home/travis/build/karlnapf/kernel_exp_family && python setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family && sh examples/run_all.sh
+script:  python setup.py install && nosetests --with-coverage --cover-package=kernel_exp_family && sh examples/run_all.sh
 
 after_success:
   - coveralls
