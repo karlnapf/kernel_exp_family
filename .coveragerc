@@ -3,4 +3,3 @@ omit =
     *__init__.py
     */python?.?/*
     */site-packages/nose/*
-    kernel_exp_family/estimators/estimator_oop.py

@@ -15,3 +15,10 @@ def assert_array_shape(a, ndim=None, shape=None, dims={}):
     for k,v in dims.items():
         if not a.shape[k] == v:
             raise ValueError("Provided array's %d-th dimension's size (%d) is not as expected (%d)." % (k, a.shape[k], v))
+
+def assert_positive_int(i):
+    if not type(i) is np.int:
+        raise TypeError("Provided argument (%s) must be npumpy.int." % str(type(i)))
+    
+    if not i>0:
+        raise ValueError("Provided integer (%d) must be positive." % i)
