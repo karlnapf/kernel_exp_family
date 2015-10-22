@@ -1,6 +1,8 @@
 # for making examples work server
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib; matplotlib.use('Agg')
+
+import sys
+print(sys.path)
 
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
@@ -27,7 +29,7 @@ def visualise_array(Xs, Ys, A, samples=None):
     im.set_interpolation('nearest')
     im.set_cmap('gray')
     if samples is not None:
-        plt.plot(samples[:,0], samples[:,1], 'bx')
+        plt.plot(samples[:, 0], samples[:, 1], 'bx')
     plt.ylim([Ys.min(), Ys.max()])
     plt.xlim([Xs.min(), Xs.max()])
 
@@ -51,12 +53,12 @@ if __name__ == '__main__':
     est.fit(X)
     
     # main interface for log pdf and gradient
-    log_pdfs = est.log_pdf_multiple(np.random.randn(2,2))
+    log_pdfs = est.log_pdf_multiple(np.random.randn(2, 2))
     log_pdf = est.log_pdf(np.zeros(D))
     grad = est.grad(np.zeros(D))
     
     # score matching objective function (can be used for parameter tuning)
-    print est.objective(X)
+    o = est.objective(X)
     
     # compute log-pdf and gradients over a grid and visualise
     Xs = np.linspace(-5, 5)
@@ -67,18 +69,18 @@ if __name__ == '__main__':
     G_true = np.zeros(D.shape)
     
     # this is in-efficient, log_pdf_multiple on a 2d array is faster
-    for i,x in enumerate(Xs):
-        for j,y in enumerate(Ys):
-            point = np.array([x,y])
-            D[j,i] = est.log_pdf(point)
-            G[j,i] = np.linalg.norm(est.grad(point))
+    for i, x in enumerate(Xs):
+        for j, y in enumerate(Ys):
+            point = np.array([x, y])
+            D[j, i] = est.log_pdf(point)
+            G[j, i] = np.linalg.norm(est.grad(point))
             
             # this is the true log-pdf of the simple Gaussian target
-            D_true[j,i] = -0.5 * np.dot(point, point)
-            G_true[j,i] = np.linalg.norm(point)
+            D_true[j, i] = -0.5 * np.dot(point, point)
+            G_true[j, i] = np.linalg.norm(point)
     
     # visualise log-pdf, gradients, and ground truth
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(5, 5))
     
     plt.subplot(221)
     visualise_array(Xs, Ys, D, X)
