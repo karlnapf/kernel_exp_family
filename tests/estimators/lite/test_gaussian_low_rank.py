@@ -14,7 +14,7 @@ import kernel_exp_family.estimators.lite.develop_gaussian_low_rank as develop_ga
 
 import numpy as np
 
-def test_compute_b_sym_low_rank_matches_full():
+def test_compute_b_sym_matches_full():
     sigma = 1.
     Z = np.random.randn(100, 2)
     low_rank_dim = int(len(Z) * .9)
@@ -25,7 +25,7 @@ def test_compute_b_sym_low_rank_matches_full():
     y = develop_gaussian_low_rank.compute_b_sym(Z, R.T, sigma)
     assert_allclose(x, y, atol=5e-1)
 
-def test_compute_b_low_rank_matches_full():
+def test_compute_b_matches_full():
     sigma = 1.
     X = np.random.randn(100, 2)
     Y = np.random.randn(50, 2)
@@ -41,7 +41,7 @@ def test_compute_b_low_rank_matches_full():
     y = gaussian_low_rank.compute_b(X, Y, R.T, R_test.T, sigma)
     assert_allclose(x, y, atol=5e-1)
 
-def test_compute_b_low_rank_matches_sym():
+def test_compute_b_matches_sym():
     sigma = 1.
     X = np.random.randn(10, 2)
     R = incomplete_cholesky_gaussian(X, sigma, eta=0.1)["R"]
@@ -50,7 +50,7 @@ def test_compute_b_low_rank_matches_sym():
     y = develop_gaussian_low_rank.compute_b_sym(X, R.T, sigma)
     assert_allclose(x, y)
     
-def test_apply_C_left_sym_low_rank_matches_full():
+def test_apply_C_left_sym_matches_full():
     sigma = 1.
     N = 10
     Z = np.random.randn(N, 2)
@@ -64,7 +64,7 @@ def test_apply_C_left_sym_low_rank_matches_full():
     y = develop_gaussian_low_rank.apply_left_C_sym(v, Z, R.T, lmbda)
     assert_allclose(x, y, atol=1e-1)
 
-def test_apply_C_left_low_rank_matches_full():
+def test_apply_C_left_matches_full():
     sigma = 1.
     N = 100
     X = np.random.randn(N, 2)
@@ -85,7 +85,7 @@ def test_apply_C_left_low_rank_matches_full():
     y = gaussian_low_rank.apply_left_C(v, X, Y, R.T, R_test.T, lmbda)
     assert_allclose(x, y, atol=1e-1)
 
-def apply_C_low_rank_matches_sym():
+def apply_C_matches_sym():
     sigma = 1.
     N_X = 100
     X = np.random.randn(N_X, 2)
@@ -112,7 +112,7 @@ def test_compute_C_matches_sym():
     C = gaussian.compute_C(Z, Z, K, sigma=sigma)
     assert_allclose(C, C_sym)
 
-def test_score_matching_sym_low_rank_matches_full():
+def test_score_matching_sym_matches_full():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -123,7 +123,7 @@ def test_score_matching_sym_low_rank_matches_full():
     a_cholesky_cg = develop_gaussian_low_rank.fit_sym(Z, sigma, lmbda, L=R.T)
     assert_allclose(a, a_cholesky_cg, atol=3)
 
-def test_score_matching_low_rank_matches_sym():
+def test_score_matching_matches_sym():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -141,7 +141,7 @@ def test_score_matching_low_rank_matches_sym():
     assert_allclose(a, a_sym)
 
 @timed(5)
-def test_score_matching_sym_low_rank_time():
+def test_score_matching_sym_time():
     sigma = 1.
     lmbda = 1.
     N = 20000
@@ -150,7 +150,7 @@ def test_score_matching_sym_low_rank_time():
     R = incomplete_cholesky_gaussian(Z, sigma, eta=0.1)["R"]
     develop_gaussian_low_rank.fit_sym(Z, sigma, lmbda, L=R.T, cg_tol=1e-1)
 
-def test_objective_low_rank_matches_sym():
+def test_objective_matches_sym():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -170,7 +170,7 @@ def test_objective_low_rank_matches_sym():
     
     assert_close(J, J_sym)
 
-def test_objective_low_rank_matches_full():
+def test_objective_matches_full():
     sigma = 1.
     lmbda = 1.
     X = np.random.randn(100, 2)
@@ -193,7 +193,7 @@ def test_objective_low_rank_matches_full():
     
     assert_close(J, J_full, decimal=1)
 
-def test_objective_sym_low_rank_optimum():
+def test_objective_sym_optimum():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -208,7 +208,7 @@ def test_objective_sym_low_rank_optimum():
         J = develop_gaussian_low_rank.objective_sym(Z, sigma, lmbda, a_random, L)
         assert J >= J_opt
 
-def test_objective_sym_low_rank_matches_full():
+def test_objective_sym_matches_full():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
