@@ -13,7 +13,7 @@ do
 	echo "import matplotlib; matplotlib.use('Agg')\n" | cat - "$name" > "$name"_with_header
 
 	# run
-    echo Running "$name"
+    echo Running example "$name"
 	python "$name"_with_header > /dev/null
 	
 	# clean up
