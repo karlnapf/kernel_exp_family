@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Runs all example python script in the current folder,
+# prepending a matplotlib backend, such that plotting
+# code in the example doesn't block the script, or fail
+# the execution on servers without DISPLAY
+
 # create temp file for all example scripts
 LIST=$(mktemp /tmp/kernel_exp_family_examples.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
