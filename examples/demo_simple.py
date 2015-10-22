@@ -6,6 +6,11 @@ print sys.path
 import os
 print os.getcwd()
 
+import kernel_exp_family
+import kernel_exp_family.estimators
+import kernel_exp_family.estimators.finite
+import kernel_exp_family.estimators.finite.gaussian
+
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
