@@ -7,6 +7,7 @@ import os
 print os.getcwd()
 
 import kernel_exp_family
+print kernel_exp_family
 import kernel_exp_family.estimators
 import kernel_exp_family.estimators.finite
 import kernel_exp_family.estimators.finite.gaussian
