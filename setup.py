@@ -8,5 +8,5 @@ setup(name='kernel_exp_family',
       author='Heiko Strathmann',
       author_email='heiko.strathmann@gmail.com',
       license='BSD3',
-      packages=find_packages('.', exclude=["tests", "*.develop"]),
+      packages=find_packages('.', exclude=["*tests*", "*.develop"]),
       zip_safe=False)
