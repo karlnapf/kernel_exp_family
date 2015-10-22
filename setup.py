@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(name='kernel_exp_family',
@@ -8,5 +8,6 @@ setup(name='kernel_exp_family',
       author='Heiko Strathmann',
       author_email='heiko.strathmann@gmail.com',
       license='BSD3',
-      packages=['kernel_exp_family'],
+      packages=find_packages('.'),
+      package_dir={'': 'examples'},
       zip_safe=False)
