@@ -1,2 +1,2 @@
-pwd
+export PYTHONPATH=$PYTHONPATH:.
 find examples/ -type f -name '*.py' ! -name '__init__.py' | xargs -i sh -c 'echo Running {}; python {}'
