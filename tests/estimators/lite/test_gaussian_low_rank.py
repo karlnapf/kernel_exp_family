@@ -62,7 +62,7 @@ def test_apply_C_left_sym_matches_full():
     
     x = (develop_gaussian.compute_C_sym(Z, K, sigma) + lmbda * (K + np.eye(len(K)))).dot(v)
     y = develop_gaussian_low_rank.apply_left_C_sym(v, Z, R.T, lmbda)
-    assert_allclose(x, y, atol=1e-1)
+    assert_allclose(x, y, atol=1e-1, rtol=1e-3)
 
 def test_apply_C_left_matches_full():
     sigma = 1.
