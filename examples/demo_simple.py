@@ -1,6 +1,11 @@
 # for making examples work server
 import matplotlib; matplotlib.use('Agg')
 
+import sys
+print sys.path
+import os
+print os.getcwd()
+
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
