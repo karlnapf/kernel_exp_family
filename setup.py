@@ -9,5 +9,4 @@ setup(name='kernel_exp_family',
       author_email='heiko.strathmann@gmail.com',
       license='BSD3',
       packages=find_packages('.'),
-      package_dir={'': 'examples'},
       zip_safe=False)
