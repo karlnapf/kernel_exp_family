@@ -28,26 +28,6 @@ def compute_b_sym(Z, L, sigma):
     
     return b
 
-def compute_C_sym(Z, K, sigma):
-    assert K.shape[0] == Z.shape[0]
-    assert K.shape[0] == K.shape[1]
-    
-    D = Z.shape[1]
-    N = Z.shape[0]
-    
-    C = np.zeros((N, N))
-    for l in np.arange(D):
-        x_l = Z[:, l]
-        
-        # Replaces dot product with np.diag via broadcasting
-        # See http://mail.scipy.org/pipermail/numpy-discussion/2007-March/026809.html
-        D_x_K = x_l[:, np.newaxis] * K
-        K_D_x = K * x_l
-        
-        C += (D_x_K - K_D_x).dot(K_D_x - D_x_K)
-    
-    return C
-
 def apply_left_C_sym(v, Z, L, lmbda):
     assert len(Z) == len(L)
     assert len(v.shape) == 1
