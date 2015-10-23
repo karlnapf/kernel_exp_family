@@ -19,13 +19,15 @@ do
 
 	# run
     echo Running example "$name"
-    if ! python "$name"_with_header > /dev/null
-    then
-        exit 1
-    fi
+    SUCCESS=python "$name"_with_header > /dev/null
 	
 	# clean up
 	rm "$name"_with_header
+	
+	if $SUCCESS
+	then
+        exit 1
+    fi
 done < $LIST
 
 # clean up
