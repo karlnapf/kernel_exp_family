@@ -21,7 +21,6 @@ addons:
 install:
  - pip install -r requirements.txt --use-mirrors
  - pip install coveralls
- - git clone https://github.com/mwhoffman/pybo.git && export PYTHONPATH=$PYTHONPATH:pybo
 
 script: 
   - python setup.py install

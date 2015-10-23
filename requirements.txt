@@ -1,2 +1,5 @@
 scipy>=0.9
 numpy>=1.6.1
+git+https://github.com/mwhoffman/ezplot.git#egg=ezplot
+git+https://github.com/mwhoffman/reggie.git#egg=reggie
+git+https://github.com/mwhoffman/pybo.git#egg=pybo
