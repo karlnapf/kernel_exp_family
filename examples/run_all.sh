@@ -21,13 +21,14 @@ do
     echo Running example "$name"
     python "$name"_with_header > /dev/null
 	
+	# store return code
 	retval=$?
 	
 	# clean up
 	rm "$name"_with_header
 	
 	if [ $retval -ne 0 ]; then
-		echo "Failed with error code $retval"
+		echo "Example $name failed with error code $retval."
 		exit 1
 	fi
 done < $LIST
