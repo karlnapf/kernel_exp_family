@@ -1,4 +1,4 @@
-scipy>=0.16
+scipy>=0.15
 numpy>=1.6
 
 # bayesian optimisation via pybo and dependencies
