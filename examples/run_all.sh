@@ -19,7 +19,7 @@ do
 
 	# run
     echo Running example "$name"
-    if not python "$name"_with_header > /dev/null
+    if ! python "$name"_with_header > /dev/null
     then
         exit 1
     fi
