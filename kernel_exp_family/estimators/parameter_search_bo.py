@@ -8,7 +8,7 @@ class BayesOptSearch(object):
         self.data = data
         self.param_bounds = param_bounds
         self.objective_log = objective_log
-        self.log_bound = log_bound
+        self.log_bound = objective_log_bound
 #     
 #         # parameter space dimensions correspond to sorted parameter bound keys
         self.param_names = np.sort(param_bounds.keys())
