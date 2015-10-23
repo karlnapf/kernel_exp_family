@@ -13,10 +13,19 @@ sudo: false
 addons:
   apt:
     packages:
+    - libatlas-base-dev
+    - gfortran
     - python-numpy
-    - python-scipy
     - python-matplotlib
 
+# install up to date scipy, taken from
+# https://gist.github.com/debsankha/7f610a9f2a826803381a
+before_install:
+    - mkdir -p $HOME/.cache/pip/wheels    
+    # build wheel only if none present
+    - travis_wait pip wheel --find-links=$HOME/.cache/pip/wheels --use-wheel --wheel-dir=$HOME/.cache/pip/wheels scipy
+    # now install from it
+    - pip install --no-index --find-links=$HOME/.cache/pip/wheels scipy
 
 install:
  - pip install -r requirements.txt --use-mirrors
