@@ -9,7 +9,7 @@
 LIST=$(mktemp /tmp/kernel_exp_family_examples.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
 # find all example scripts
-find . -type f -name '*.py' ! -name '__init__.py' > $LIST
+find . -type f -name 'demo_*.py' ! -name '__init__.py' > $LIST
 
 # iterate over all scripts
 while read name
