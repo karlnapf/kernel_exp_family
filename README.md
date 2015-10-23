@@ -7,7 +7,7 @@ Various estimators of the [infinite dimensional exponential family model](http:/
 
 For learning parameters, there is the option to use the Bayesian optimisation package [pybo](https://github.com/mwhoffman/pybo).
 
-See [here](kernel_exp_family/examples) for a list of demos.
+See [here](https://github.com/karlnapf/kernel_exp_family/tree/master/examples) for a list of demos.
 
 Installation:
 
