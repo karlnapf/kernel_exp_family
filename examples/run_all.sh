@@ -19,15 +19,17 @@ do
 
 	# run
     echo Running example "$name"
-    SUCCESS=python "$name"_with_header > /dev/null
+    python "$name"_with_header > /dev/null
+	
+	retval=$?
 	
 	# clean up
 	rm "$name"_with_header
 	
-	if $SUCCESS
-	then
-        exit 1
-    fi
+	if [ $retval -ne 0 ]; then
+		echo "Failed with error code $retval"
+		exit 1
+	fi
 done < $LIST
 
 # clean up
