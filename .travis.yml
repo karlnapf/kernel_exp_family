@@ -17,6 +17,7 @@ addons:
     - gfortran
     - python-numpy
     - python-matplotlib
+    - cython
 
 # install up to date scipy, taken from
 # https://gist.github.com/debsankha/7f610a9f2a826803381a
