@@ -19,7 +19,10 @@ do
 
 	# run
     echo Running example "$name"
-	python "$name"_with_header > /dev/null
+    if not python "$name"_with_header > /dev/null
+    then
+        exit 1
+    fi
 	
 	# clean up
 	rm "$name"_with_header
