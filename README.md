@@ -9,9 +9,12 @@ For learning parameters, there is the option to use the Bayesian optimisation pa
 
 See [here](https://github.com/karlnapf/kernel_exp_family/tree/master/examples) for a list of demos.
 
-Installation:
+Install dependencies:
 
     pip install -r https://raw.githubusercontent.com/karlnapf/kernel_exp_family/master/requirements.txt
+    
+Install kernel_exp_family:
+
     pip install git+https://github.com/karlnapf/kernel_exp_family.git
 
 
