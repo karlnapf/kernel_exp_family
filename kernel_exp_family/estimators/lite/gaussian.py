@@ -145,3 +145,6 @@ class KernelExpLiteGaussian(EstimatorBase):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         return objective(self.X, X, self.sigma, self.lmbda, self.alpha, self.K)
+
+    def get_parameter_names(self):
+        return ['sigma', 'lmbda']

@@ -220,3 +220,6 @@ class KernelExpFiniteGaussian(EstimatorBase):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, self.C)
+
+    def get_parameter_names(self):
+        return ['gamma', 'lmbda']

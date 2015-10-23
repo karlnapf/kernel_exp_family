@@ -1,3 +1,4 @@
+from examples.tools import pdf_grid, visualise_array
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     
     # create grid over sigma parameters, fixed regulariser
     log_sigmas = np.linspace(-5, 10, 20)
-    lmbda = 1.
+    lmbda = 0.001
     
     # evaluate objective function over all those parameters
     O = np.zeros(len(log_sigmas))
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     best_log_sigma = log_sigmas[np.argmin(O)]
     
     # visualisation
+    plt.figure()
     plt.plot([best_log_sigma, best_log_sigma], [np.min(O), np.max(O)], 'r')
     plt.plot(log_sigmas, O, 'b-')
     plt.plot(log_sigmas, O_lower, 'b--')
@@ -50,4 +52,23 @@ if __name__ == '__main__':
     plt.title("lmbda=%.4f" % lmbda)
     plt.legend(["Best sigma", "Performance"])
     plt.legend(["Best sigma", "Performance", "80% percentile"])
+    plt.tight_layout()
+    
+    est.sigma = np.exp(best_log_sigma)
+    est.fit(X)
+    plt.figure()
+    Xs = np.linspace(-5, 5)
+    Ys = np.linspace(-5, 5)
+    D, G = pdf_grid(Xs, Ys, est)
+    
+    plt.subplot(121)
+    visualise_array(Xs, Ys, D, X)
+    plt.title("estimate log pdf")
+    
+    plt.subplot(122)
+    visualise_array(Xs, Ys, G, X)
+    plt.title("estimate gradient norm")
+    
+    plt.suptitle("Best sigma fit")
+    plt.tight_layout()
     plt.show()
