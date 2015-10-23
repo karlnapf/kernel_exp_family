@@ -3,7 +3,7 @@ from pybo import solve_bayesopt
 
 
 class BayesOptSearch(object):
-    def __init__(self, estimator, data, param_bounds, objective_log=False, log_bound=1000):
+    def __init__(self, estimator, data, param_bounds, objective_log=False, objective_log_bound=1000):
         self.estimator = estimator
         self.data = data
         self.param_bounds = param_bounds

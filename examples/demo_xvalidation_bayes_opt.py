@@ -25,7 +25,8 @@ if __name__ == '__main__':
               }
     
     # oop interface for optimising and using results
-    bo = BayesOptSearch(est, data, param_bounds, objective_log=False)
+    # objective is not put through log here, if it is, might want to bound away from zero
+    bo = BayesOptSearch(est, data, param_bounds, objective_log=False, objective_log_bound=100)
     best_params =  bo.optimize(num_iter=10)
     est.set_parameters_from_dict(best_params)
     
