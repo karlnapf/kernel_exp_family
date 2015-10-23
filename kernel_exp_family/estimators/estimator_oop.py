@@ -43,7 +43,13 @@ class EstimatorBase(object):
         return O
     
     def set_parameters_from_dict(self, param_dict):
+        if type(param_dict) is not dict:
+            raise TypeError("Given param_dict's type (%s) must be dictionary" % str(type(param_dict)))
+        
         for name, value in param_dict.items():
+            if name not in self.get_parameter_names():
+                raise ValueError("Parameter %s not in %s" % (name, str(self.get_parameter_names())))
+            
             setattr(self, name, value)
     
     @abstractmethod

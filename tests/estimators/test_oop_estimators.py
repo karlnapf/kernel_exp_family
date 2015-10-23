@@ -381,3 +381,55 @@ def test_xvalidate_objective_wrong_input_negative_int():
         X = np.random.randn(N, est.D + 1)
         assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=0, num_repetitions=2)
         assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=0)
+
+def test_get_parameters_finite():
+    names = get_instace_KernelExpFiniteGaussian().get_parameter_names()
+    assert "gamma" in names
+    assert "lmbda" in names
+    assert len(names) == 2
+
+def test_get_parameters_lite():
+    names = get_instace_KernelExpLiteGaussian().get_parameter_names()
+    assert "sigma" in names
+    assert "lmbda" in names
+    assert len(names) == 2
+
+def test_get_parameters():
+    estimators = get_estimator_instances()
+    
+    for estimator in estimators:
+        param_dict = estimator.get_parameters()
+        for name, value in param_dict.items():
+            assert getattr(estimator, name) == value
+
+def test_set_parameters_from_dict():
+    estimators = get_estimator_instances()
+    
+    for estimator in estimators:
+        param_dict = estimator.get_parameters()
+        param_dict_old = param_dict.copy()
+        for name in param_dict.keys():
+            param_dict[name] += 1
+        
+        estimator.set_parameters_from_dict(param_dict)
+        
+        param_dict_new = estimator.get_parameters()
+        for name in param_dict_new.keys():
+            assert param_dict_new[name] == param_dict_old[name] + 1
+        
+def test_set_parameters_from_dict_wrong_input_type():
+    estimators = get_estimator_instances()
+    
+    for estimator in estimators:
+        assert_raises(TypeError, estimator.set_parameters_from_dict, None)
+        assert_raises(TypeError, estimator.set_parameters_from_dict, 1)
+        assert_raises(TypeError, estimator.set_parameters_from_dict, [])
+        
+def test_set_parameters_from_dict_wrong_input_parameters():
+    estimators = get_estimator_instances()
+    
+    for estimator in estimators:
+        param_dict = estimator.get_parameters()
+        param_dict['strange_parameter'] = 0
+        assert_raises(ValueError, estimator.set_parameters_from_dict, param_dict)
+        
