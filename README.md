@@ -17,4 +17,7 @@ Install kernel_exp_family:
 
     pip install git+https://github.com/karlnapf/kernel_exp_family.git
 
+A list of examples can be found [here](kernel_exp_family/tree/master/kernel_exp_family/examples). For example, run
+
+    python -m kernel_exp_family.examples.demo_simple.py
 
