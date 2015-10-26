@@ -28,11 +28,15 @@ if __name__ == '__main__':
     est = KernelExpFiniteGaussian(gamma, lmbda, m, D)
     est.fit(X)
 
+    # only for plotting
     all_data = [X]
+    
+    # plotting grid
     width = 6
     Xs = np.linspace(-width, width, 50)
     Ys = np.linspace(-width, width, 50)
 
+    # plot ground truth
     plt.figure(figsize=(10, 10))
     fig_count = 1
     plt.subplot(3, 3, fig_count)
@@ -40,9 +44,9 @@ if __name__ == '__main__':
     visualise_array(Xs, Ys, G_true, np.vstack(all_data))
     plt.title("Gradient norm, ground truth")
     
+    # plot initial fit
     fig_count +=1
     plt.subplot(3, 3, fig_count)
-    
     D, G = pdf_grid(Xs, Ys, est)
     visualise_array(Xs, Ys, G, np.vstack(all_data))
     plt.title("Gradient norm, initial fit, N=%d" % (est.n))
@@ -59,7 +63,7 @@ if __name__ == '__main__':
         # only for plotting
         all_data.append(X)
             
-        # compute log-pdf and gradients over a grid and visualise
+        # visualise current fit
         fig_count += 1
         plt.subplot(3, 3, fig_count)
         D, G = pdf_grid(Xs, Ys, est)
