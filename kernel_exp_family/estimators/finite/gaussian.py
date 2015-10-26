@@ -331,3 +331,8 @@ class KernelExpFiniteGaussian(EstimatorBase):
     def get_parameter_names(self):
         return ['gamma', 'lmbda']
     
+    def set_parameters_from_dict(self, param_dict):
+        EstimatorBase.set_parameters_from_dict(self, param_dict)
+        
+        # update basis
+        self.omega, self.u = sample_basis(self.D, self.m, self.gamma)
