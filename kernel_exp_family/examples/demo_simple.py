@@ -18,11 +18,19 @@ def get_KernelExpLiteGaussian_instance(D):
     lmbda = 0.01
     return KernelExpLiteGaussian(sigma, lmbda, D)
 
+class ground_truth():
+    def __init__(self):
+        pass
+    def log_pdf(self, x):
+        return -0.5 * np.dot(x, x)
+    def grad(self, x):
+        return np.linalg.norm(x)
+
 if __name__ == '__main__':
     """
     This simple demo demonstrates how to use the the object-oriented API.
     We fit our model to a simple 2D Gaussian, and plot the results.
-    You can play around with different estimators in the code below and see how
+    You can play around * 5 with different estimators in the code below and see how
     they behave.
     Note that we do not cover parameter choice in this demo.
     """
@@ -50,14 +58,6 @@ if __name__ == '__main__':
     Ys = np.linspace(-5, 5)
     D, G = pdf_grid(Xs, Ys, est)
     
-    class ground_truth():
-        def __init__(self):
-            pass
-        def log_pdf(self,x):
-            return -0.5 * np.dot(x, x)
-        def grad(self, x):
-            return np.linalg.norm(x)
-        
     D_true, G_true = pdf_grid(Xs, Ys, ground_truth())
     
     # visualise log-pdf, gradients, and ground truth
