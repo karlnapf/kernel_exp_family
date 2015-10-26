@@ -118,7 +118,7 @@ def test_incomplete_cholesky_new_points_euqals_new_point():
     R_test = np.zeros(R.shape)
     for i in range(low_rank_dim):
         R_test[:, i] = incomplete_cholesky_new_point(X, X[i], kernel, I, R, nu)
-        assert_allclose(R_test[:, i], R_test_full[:, i])
+        assert_allclose(R_test[:, i], R_test_full[:, i], atol=0.001)
 
 def test_incomplete_cholesky_asymmetric():
     kernel = lambda X, Y = None : gaussian_kernel(X, Y, sigma=1.)
