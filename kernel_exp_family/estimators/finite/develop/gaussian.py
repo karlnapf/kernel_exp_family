@@ -110,29 +110,6 @@ def compute_C_memory(X, omega, u):
 
     return C4 / N
 
-def update_C(x, C, n, omega, u):
-    D = omega.shape[0]
-    assert x.ndim == 1
-    assert len(x) == D
-    m = 1 if np.isscalar(u) else len(u)
-    N = 1
-    
-    C_new = np.zeros((m, m))
-    projection = np.dot(x[np.newaxis, :], omega) + u
-    np.sin(projection, projection)
-    projection *= -np.sqrt(2. / m)
-    temp = np.zeros((N, m))
-    for d in range(D):
-        temp = -projection * omega[d, :]
-        C_new += np.tensordot(temp, temp, [0, 0])
-    
-    # Knuth's running average
-    n = n + 1
-    delta = C_new - C
-    C += delta / n
-    
-    return C
-
 def update_L_C_naive(x, L_C, n, omega, u):
     D = omega.shape[0]
     assert x.ndim == 1

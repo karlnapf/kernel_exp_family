@@ -1,4 +1,5 @@
 from nose.tools import assert_raises
+from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
@@ -432,4 +433,107 @@ def test_set_parameters_from_dict_wrong_input_parameters():
         param_dict = estimator.get_parameters()
         param_dict['strange_parameter'] = 0
         assert_raises(ValueError, estimator.set_parameters_from_dict, param_dict)
+
+def test_update_fit_if_exists_execute():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        x = np.random.randn(est.D)
+        est.fit(X)
         
+        if hasattr(est, 'update_fit'):
+            est.update_fit(x)
+
+def test_update_fit_if_exists_has_n_equals_0():
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        if hasattr(est, 'update_fit'):
+            assert hasattr(est, 'n')
+            assert est.n == 0
+
+def test_update_fit_if_exists_n_batch_fit():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        est.fit(X)
+        if hasattr(est, 'update_fit'):
+            assert est.n == N
+
+def test_update_fit_if_exists_n_increases():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        est.fit(X)
+        if hasattr(est, 'update_fit'):
+            est.update_fit(np.zeros(est.D))
+            assert est.n == N + 1
+
+def test_update_fit_if_exists_equals_batch():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        x = np.random.randn(est.D)
+        merged = np.vstack((X,x))
+        est.fit(merged)
+        log_pdf_batch = est.log_pdf_multiple(merged)
+        est.fit(X)
+        
+        if hasattr(est, 'update_fit'):
+            est.update_fit(x)
+            log_pdf_online = est.log_pdf_multiple(merged)
+            assert_allclose(log_pdf_online, log_pdf_batch)
+
+def test_update_fit_if_exists_wrong_not_yet_fitted():
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        x = np.random.randn(est.D)
+        
+        if hasattr(est, 'update_fit'):
+            assert_raises(RuntimeError, est.update_fit, x)
+
+def test_update_fit_if_exists_wrong_input_type():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        est.fit(X)
+        
+        if hasattr(est, 'update_fit'):
+            assert_raises(TypeError, est.update_fit, None)
+            assert_raises(TypeError, est.update_fit, 1)
+            assert_raises(TypeError, est.update_fit, [1, 2, 3])
+            
+def test_update_fit_if_exists_wrong_input_shape():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        est.fit(X)
+        
+        if hasattr(est, 'update_fit'):
+            assert_raises(ValueError, est.update_fit, np.random.randn(est.D, 2))
+            assert_raises(ValueError, est.update_fit, np.zeros(0))
+            
+def test_update_fit_if_exists_wrong_input_dims():
+    N = 100
+    estimators = get_estimator_instances()
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        est.fit(X)
+        
+        if hasattr(est, 'update_fit'):
+            assert_raises(ValueError, est.update_fit, np.random.randn(est.D + 1))
+            assert_raises(ValueError, est.update_fit, np.random.randn(est.D - 1))

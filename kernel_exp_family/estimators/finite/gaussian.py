@@ -216,7 +216,7 @@ def fit(X, lmbda, omega, u, b=None, C=None):
     theta = np.linalg.solve(C + lmbda * np.eye(len(C)), b)
     return theta
 
-def fit_L_C_precomputed(X, lmbda, omega, u, b, L_C):
+def fit_L_C_precomputed(b, L_C):
     theta = sp.linalg.cho_solve((L_C, True), b)
     return theta
 
@@ -230,6 +230,28 @@ def objective(X, theta, lmbda, omega, u, b=None, C=None):
     I = np.eye(len(theta))
     return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
 
+def update_C(x, C, n, omega, u):
+    D = omega.shape[0]
+    assert x.ndim == 1
+    assert len(x) == D
+    m = 1 if np.isscalar(u) else len(u)
+    N = 1
+    
+    C_new = np.zeros((m, m))
+    projection = np.dot(x[np.newaxis, :], omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
+    for d in range(D):
+        temp = -projection * omega[d, :]
+        C_new += np.tensordot(temp, temp, [0, 0])
+    
+    # Knuth's running average
+    n = n + 1
+    delta = C_new - C
+    C += delta / n
+    
+    return C
 
 class KernelExpFiniteGaussian(EstimatorBase):
     def __init__(self, gamma, lmbda, m, D):
@@ -238,25 +260,43 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.m = m
         self.D = D
         self.omega, self.u = sample_basis(D, m, gamma)
+        
+        # components of linear system, stored for potential online updating
         self.b = None
-        self.L_C = None
-        self.theta = None
+        self.C = None
+        
+        # number of terms
         self.n = 0
+        
+        # solution
+        self.theta = None
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         self.b = compute_b(X, self.omega, self.u)
-        C = compute_C(X, self.omega, self.u)
-        self.L_C = np.linalg.cholesky(C + self.lmbda * np.eye(self.m))
+        self.C = compute_C(X, self.omega, self.u)
         self.n = len(X)
         
-        self.theta = fit_L_C_precomputed(X, self.lmbda, self.omega, self.u, self.b, self.L_C)
+        self.theta = fit(X, self.lmbda, self.omega, self.u, self.b, self.C)
     
     def update_fit(self, x):
-        self.n += 1
+        if self.theta is None:
+            raise RuntimeError("Model not fitted yet.")
+        
+        if self.n < self.m:
+            raise RuntimeError("Data count (%d) must be at least (m=%d) before update method can be called. Call fit method." % \
+                               (self.n, self.m))
+        
+        assert_array_shape(x, ndim=1, dims={0: self.D})
+        
         self.b = update_b(x, self.b, self.n, self.omega, self.u)
-        self.L_C = update_L_C(x, self.L_C, self.n, self.omega, self.u)
+        self.C = update_C(x, self.C, self.n, self.omega, self.u)
+        self.n += 1
+        
+        # TODO: this is currently O(m^3) rather than possibly O(m^2)
+        # can be achieved using low-rank updates of Cholesky of C
+        self.theta = fit(x, self.lmbda, self.omega, self.u, self.b, self.C)
         
     def log_pdf(self, x):
         if self.theta is None:
@@ -286,10 +326,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
             raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        # reconstruct C
-        C = np.dot(self.L_C, self.L_C.T) - np.eye(self.lmbda)
-        
-        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, C)
+        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, self.C)
 
     def get_parameter_names(self):
         return ['gamma', 'lmbda']

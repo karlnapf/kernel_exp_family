@@ -4,11 +4,11 @@ from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.develop.gaussian import feature_map_grad_loop, \
     feature_map_grad2_loop, compute_b_memory, compute_C_memory, \
-    _objective_sym_completely_manual, _objective_sym_half_manual, update_C 
+    _objective_sym_completely_manual, _objective_sym_half_manual 
 from kernel_exp_family.estimators.finite.gaussian import feature_map_single, \
     feature_map, feature_map_grad_d, feature_map_grad2_d, \
     feature_map_grad_single, fit, objective, compute_b, compute_C, \
-    feature_map_grad, feature_map_grad2, update_b, update_L_C
+    feature_map_grad, feature_map_grad2, update_b, update_L_C, update_C
 import numpy as np
 
 
