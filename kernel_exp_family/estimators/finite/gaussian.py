@@ -3,6 +3,7 @@ from choldate._choldate import cholupdate
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
+import scipy as sp
 
 
 def sample_basis(D, m, gamma):
@@ -205,7 +206,6 @@ def update_L_C(x, L_C, n, omega, u):
     
     return L_C
 
-
 def fit(X, lmbda, omega, u, b=None, C=None):
     if b is None:
         b = compute_b(X, omega, u)
@@ -215,7 +215,11 @@ def fit(X, lmbda, omega, u, b=None, C=None):
     
     theta = np.linalg.solve(C + lmbda * np.eye(len(C)), b)
     return theta
-    
+
+def fit_L_C_precomputed(X, lmbda, omega, u, b, L_C):
+    theta = sp.linalg.cho_solve((L_C, True), b)
+    return theta
+
 def objective(X, theta, lmbda, omega, u, b=None, C=None):
     if b is None:
         b = compute_b(X, omega, u)
@@ -226,6 +230,7 @@ def objective(X, theta, lmbda, omega, u, b=None, C=None):
     I = np.eye(len(theta))
     return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
 
+
 class KernelExpFiniteGaussian(EstimatorBase):
     def __init__(self, gamma, lmbda, m, D):
         self.gamma = gamma
@@ -233,16 +238,26 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.m = m
         self.D = D
         self.omega, self.u = sample_basis(D, m, gamma)
+        self.b = None
+        self.L_C = None
         self.theta = None
+        self.n = 0
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         self.b = compute_b(X, self.omega, self.u)
-        self.C = compute_C(X, self.omega, self.u)
+        C = compute_C(X, self.omega, self.u)
+        self.L_C = np.linalg.cholesky(C + self.lmbda * np.eye(self.m))
+        self.n = len(X)
         
-        self.theta = fit(X, self.lmbda, self.omega, self.u, self.b, self.C)
+        self.theta = fit_L_C_precomputed(X, self.lmbda, self.omega, self.u, self.b, self.L_C)
     
+    def update_fit(self, x):
+        self.n += 1
+        self.b = update_b(x, self.b, self.n, self.omega, self.u)
+        self.L_C = update_L_C(x, self.L_C, self.n, self.omega, self.u)
+        
     def log_pdf(self, x):
         if self.theta is None:
             raise RuntimeError("Model not fitted yet.")
@@ -271,7 +286,11 @@ class KernelExpFiniteGaussian(EstimatorBase):
             raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, self.C)
+        # reconstruct C
+        C = np.dot(self.L_C, self.L_C.T) - np.eye(self.lmbda)
+        
+        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, C)
 
     def get_parameter_names(self):
         return ['gamma', 'lmbda']
+    
