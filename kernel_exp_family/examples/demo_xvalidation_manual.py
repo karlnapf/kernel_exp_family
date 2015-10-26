@@ -1,5 +1,5 @@
-from examples.tools import pdf_grid, visualise_array
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
+from kernel_exp_family.examples.tools import pdf_grid, visualise_array
 import matplotlib.pyplot as plt
 import numpy as np
 
