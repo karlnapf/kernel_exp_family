@@ -1,3 +1,5 @@
+from choldate._choldate import cholupdate
+
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
@@ -153,6 +155,56 @@ def compute_C(X, omega, u):
         C += np.tensordot(temp, temp, [0, 0])
 
     return C / N
+
+def update_b(x, b, n, omega, u):
+    D = omega.shape[0]
+    m = omega.shape[1]
+    
+    projections_sum = np.zeros(m)
+    phi = feature_map_single(x, omega, u)
+    for d in range(D):
+        # second derivative of feature map
+        phi2 = -phi * (omega[d, :] ** 2)
+        projections_sum -= phi2
+    
+    # Knuth's running average
+    n += 1
+    delta = projections_sum - b
+    b += delta / n
+    
+    return b
+
+def update_L_C(x, L_C, n, omega, u):
+    D = omega.shape[0]
+    assert x.ndim == 1
+    assert len(x) == D
+    m = 1 if np.isscalar(u) else len(u)
+    N = 1
+    
+    # since C has a 1/n term in it
+    L_C *= np.sqrt(n)
+    
+    # since cholupdate works on transposed version
+    L_C = L_C.T
+    
+    projection = np.dot(x[np.newaxis, :], omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
+    for d in range(D):
+        temp = -projection * omega[d, :]
+        
+        # here temp is 1xm, this costs O(m^2)
+        cholupdate(L_C, temp[0])
+        
+    # since cholupdate works on transposed version
+    L_C = L_C.T
+    
+    # since the new C has a 1/(n+1) term in it
+    L_C /= np.sqrt(n + 1)
+    
+    return L_C
+
 
 def fit(X, lmbda, omega, u, b=None, C=None):
     if b is None:

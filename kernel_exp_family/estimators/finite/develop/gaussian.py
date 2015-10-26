@@ -1,4 +1,4 @@
-from kernel_exp_family.estimators.finite.gaussian import feature_map,\
+from kernel_exp_family.estimators.finite.gaussian import feature_map, \
     feature_map_grad2_d, feature_map_grad_d, feature_map_grad2, feature_map_grad
 import numpy as np
 
@@ -72,8 +72,8 @@ def _objective_sym_half_manual(X, theta, lmbda, omega, u):
 
 def compute_b_memory(X, omega, u):
     assert len(X.shape) == 2
-    Phi1 = feature_map_grad2(X, omega, u)
-    return -np.mean(np.sum(Phi1, 0), 0)
+    Phi2 = feature_map_grad2(X, omega, u)
+    return -np.mean(np.sum(Phi2, 0), 0)
 
 def compute_C_memory(X, omega, u):
     assert len(X.shape) == 2
@@ -109,4 +109,52 @@ def compute_C_memory(X, omega, u):
 #     print("tensordot", time.time()-t)
 
     return C4 / N
+
+def update_C(x, C, n, omega, u):
+    D = omega.shape[0]
+    assert x.ndim == 1
+    assert len(x) == D
+    m = 1 if np.isscalar(u) else len(u)
+    N = 1
+    
+    C_new = np.zeros((m, m))
+    projection = np.dot(x[np.newaxis, :], omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
+    for d in range(D):
+        temp = -projection * omega[d, :]
+        C_new += np.tensordot(temp, temp, [0, 0])
+    
+    # Knuth's running average
+    n = n + 1
+    delta = C_new - C
+    C += delta / n
+    
+    return C
+
+def update_L_C_naive(x, L_C, n, omega, u):
+    D = omega.shape[0]
+    assert x.ndim == 1
+    assert len(x) == D
+    m = 1 if np.isscalar(u) else len(u)
+    N = 1
+    
+    C = np.dot(L_C, L_C.T)
+    
+    C_new = np.zeros((m, m))
+    projection = np.dot(x[np.newaxis, :], omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
+    for d in range(D):
+        temp = -projection * omega[d, :]
+        C_new += np.tensordot(temp, temp, [0, 0])
+    
+    # Knuth's running average
+    n = n + 1
+    delta = C_new - C
+    C += delta / n
+    
+    return np.linalg.cholesky(C)
 

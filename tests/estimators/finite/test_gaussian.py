@@ -2,13 +2,13 @@ from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.develop.gaussian import feature_map_grad_loop,\
-    feature_map_grad, feature_map_grad2_loop,\
-    feature_map_grad2, compute_b_memory, compute_C_memory,\
-    _objective_sym_completely_manual, _objective_sym_half_manual
-from kernel_exp_family.estimators.finite.gaussian import feature_map_single,\
-    feature_map, feature_map_grad_d, feature_map_grad2_d,\
-    feature_map_grad_single, fit, objective, compute_b, compute_C
+from kernel_exp_family.estimators.finite.develop.gaussian import feature_map_grad_loop, \
+    feature_map_grad2_loop, compute_b_memory, compute_C_memory, \
+    _objective_sym_completely_manual, _objective_sym_half_manual, update_C 
+from kernel_exp_family.estimators.finite.gaussian import feature_map_single, \
+    feature_map, feature_map_grad_d, feature_map_grad2_d, \
+    feature_map_grad_single, fit, objective, compute_b, compute_C, \
+    feature_map_grad, feature_map_grad2, update_b, update_L_C
 import numpy as np
 
 
@@ -372,3 +372,64 @@ def test_compute_C_equals_compute_C_memory():
     C = compute_C(X, omega, u)
     C_storage = compute_C_memory(X, omega, u)
     assert_allclose(C, C_storage, rtol=1e-4)
+
+def test_update_b_equals_batch():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    x = np.random.randn(D)
+    
+    b = compute_b(X, omega, u)
+    b = update_b(x, b, n=N, omega=omega, u=u)
+    b_batch = compute_b(np.vstack((X, x)), omega, u)
+    
+    assert_allclose(b, b_batch)
+
+def test_update_C_equals_batch():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    x = np.random.randn(D)
+    
+    C = compute_C(X, omega, u)
+    C = update_C(x, C, n=N, omega=omega, u=u)
+    C_batch = compute_C(np.vstack((X, x)), omega, u)
+    
+    assert_allclose(C, C_batch)
+    
+def test_update_L_C_naive_equals_batch():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    x = np.random.randn(D)
+    
+    L_C = np.linalg.cholesky(compute_C(X, omega, u))
+    L_C = update_L_C(x, L_C, n=N, omega=omega, u=u)
+    L_C_batch = np.linalg.cholesky(compute_C(np.vstack((X, x)), omega, u))
+
+    assert_allclose(L_C, L_C_batch)
+
+def test_update_L_C_equals_batch():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    x = np.random.randn(D)
+    
+    L_C = np.linalg.cholesky(compute_C(X, omega, u))
+    L_C = update_L_C(x, L_C, N, omega, u)
+    L_C_batch = np.linalg.cholesky(compute_C(np.vstack((X, x)), omega, u))
+
+    assert_allclose(L_C, L_C_batch)
+
