@@ -23,7 +23,7 @@ def visualise_objective():
         plt.title("objective model")
         plt.grid(True)
 
-def visualise_fit():
+def visualise_fit(est):
     # visualise found fit
     plt.figure()
     Xs = np.linspace(-5, 5)
@@ -48,7 +48,8 @@ if __name__ == '__main__':
     estimator, based on a Bayesian optimisation black-box optimiser.
     Note that this optimiser can be "hot-started", i.e. it can be reset, but using
     the previous model as initialiser for the new optimisation, which is useful
-    when the objective function changes slightly.
+    when the objective function changes slightly, e.g. when a new data was added
+    to the kernel exponential family model.
     """
     N = 200
     D = 2
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     # specify bounds of parameters to search for
     param_bounds = {
 #               'lmbda': [-3,-1], # fixed lmbda, uncomment to include in search
-              'sigma': [-3, 4],
+              'sigma': [-3, 8],
               }
     
     # oop interface for optimising and using results
@@ -71,8 +72,9 @@ if __name__ == '__main__':
     # optimisation starts here, use results and apply to model
     best_params = bo.optimize(num_iter=5)
     est.set_parameters_from_dict(best_params)
+    est.fit(X)
     
-    visualise_fit()
+    visualise_fit(est)
     plt.suptitle("Original fit %s\nOptimised over: %s" % 
              (str(est.get_parameters()), str(param_bounds)))
     visualise_objective()
@@ -87,8 +89,9 @@ if __name__ == '__main__':
     # this optimisation now runs on the "new" objective
     best_params = bo.optimize(num_iter=3)
     est.set_parameters_from_dict(best_params)
+    est.fit(X)
     
-    visualise_fit()
+    visualise_fit(est)
     plt.suptitle("New fit %s\nOptimised over: %s" % 
              (str(est.get_parameters()), str(param_bounds)))
     visualise_objective()
