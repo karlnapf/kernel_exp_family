@@ -1,7 +1,10 @@
+from scipy.misc.common import logsumexp
+
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
     gaussian_kernel_grad
 from kernel_exp_family.tools.assertions import assert_array_shape
+from kernel_hmc.tools.math import log_mean_exp
 import numpy as np
 
 
@@ -100,20 +103,29 @@ def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None):
     return J
 
 class KernelExpLiteGaussian(EstimatorBase):
-    def __init__(self, sigma, lmbda, D):
+    def __init__(self, sigma, lmbda, D, N):
         self.sigma = sigma
         self.lmbda = lmbda
         self.D = D
-        self.alpha = None
+        self.N = N
+        
+        # initial RKHS function is flat
+        self.alpha = np.zeros(0)
+        self.X = np.zeros((0, D))
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        self.X = np.copy(X)
-        self.K = gaussian_kernel(X, sigma=self.sigma)
+        # sub-sample if data is larger than previously set N
+        if len(X) > self.N:
+            inds = np.random.permutation(len(X))[:self.N]
+            self.X = X[inds]
+        else:
+            self.X = np.copy(X)
+            
+        self.K = gaussian_kernel(self.X, sigma=self.sigma)
         
-        self.alpha = fit(X, X, self.sigma, self.lmbda, self.K)
-        
+        self.alpha = fit(self.X, self.X, self.sigma, self.lmbda, self.K)
     
     def log_pdf(self, x):
         if self.alpha is None:
@@ -128,7 +140,7 @@ class KernelExpLiteGaussian(EstimatorBase):
             raise RuntimeError("Model not fitted yet.")
         assert_array_shape(x, ndim=1, dims={0: self.D})
     
-        k = gaussian_kernel_grad(x, self.X)
+        k = gaussian_kernel_grad(x, self.X, self.sigma)
         return np.dot(self.alpha, k)
     
     def log_pdf_multiple(self, X):

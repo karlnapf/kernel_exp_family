@@ -262,14 +262,14 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.omega, self.u = sample_basis(D, m, gamma)
         
         # components of linear system, stored for potential online updating
-        self.b = None
-        self.C = None
+        self.b = np.zeros(m)
+        self.C = np.eye(m)
         
         # number of terms
         self.n = 0
         
-        # solution
-        self.theta = None
+        # solution, initialise to flat function
+        self.theta = np.zeros(m)
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
@@ -281,13 +281,6 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.theta = fit(X, self.lmbda, self.omega, self.u, self.b, self.C)
     
     def update_fit(self, x):
-        if self.theta is None:
-            raise RuntimeError("Model not fitted yet.")
-        
-        if self.n < self.m:
-            raise RuntimeError("Data count (%d) must be at least (m=%d) before update method can be called. Call fit method." % \
-                               (self.n, self.m))
-        
         assert_array_shape(x, ndim=1, dims={0: self.D})
         
         self.b = update_b(x, self.b, self.n, self.omega, self.u)
