@@ -6,29 +6,28 @@ from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import numpy as np
 
 
-def get_instace_KernelExpFiniteGaussian():
+def get_instace_KernelExpFiniteGaussian(N):
     gamma = 2.
     lmbda = 1.
-    m = 10
     D = 2
-    return KernelExpFiniteGaussian(gamma, lmbda, m, D)
+    return KernelExpFiniteGaussian(gamma, lmbda, N, D)
 
-def get_instace_KernelExpLiteGaussian():
+def get_instace_KernelExpLiteGaussian(N):
     sigma = 2.
     lmbda = 1.
     D = 2
-    return KernelExpLiteGaussian(sigma, lmbda, D)
+    return KernelExpLiteGaussian(sigma, lmbda, D, N)
 
-def get_estimator_instances():
+def get_estimator_instances(N):
     return [
-            get_instace_KernelExpFiniteGaussian(),
-            get_instace_KernelExpLiteGaussian()
+            get_instace_KernelExpFiniteGaussian(N),
+            get_instace_KernelExpLiteGaussian(N)
             ]
 
 def test_fit_execute():
     N = 100
     
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -37,7 +36,7 @@ def test_fit_execute():
 def test_fit_result_none():
     N = 100
     
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -46,8 +45,8 @@ def test_fit_result_none():
 
 def test_fit_wrong_input_type():
     Xs = [None, "test", 1]
-    
-    estimators = get_estimator_instances()
+    N=1
+    estimators = get_estimator_instances(N)
     
     for X in Xs:
         for est in estimators:
@@ -56,7 +55,7 @@ def test_fit_wrong_input_type():
 def test_fit_wrong_input_shape():
     N = 100
     
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D, 2)
@@ -65,7 +64,7 @@ def test_fit_wrong_input_shape():
 def test_fit_wrong_input_dim():
     N = 100
     
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D + 1)
@@ -73,7 +72,7 @@ def test_fit_wrong_input_dim():
 
 def test_log_pdf_multiple_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -82,7 +81,7 @@ def test_log_pdf_multiple_execute():
 
 def test_log_pdf_multiple_result():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -93,19 +92,20 @@ def test_log_pdf_multiple_result():
         assert result.ndim == 1
         assert len(result) == len(X)
 
-def test_log_pdf_multiple_wrong_before_fit():
+def test_log_pdf_multiple_result_before_fit():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
         
         for est in estimators:
-            assert_raises(RuntimeError, est.log_pdf_multiple, X)
+            result = est.log_pdf_multiple(X)
+            assert_allclose(result, np.zeros(N))
 
 def test_log_pdf_multiple_wrong_input_type():
     N = 10
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -115,7 +115,7 @@ def test_log_pdf_multiple_wrong_input_type():
 
 def test_log_pdf_multiple_wrong_input_shape():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -126,7 +126,7 @@ def test_log_pdf_multiple_wrong_input_shape():
 
 def test_log_pdf_multiple_wrong_input_dim():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -137,7 +137,7 @@ def test_log_pdf_multiple_wrong_input_dim():
 
 def test_log_pdf_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -147,7 +147,7 @@ def test_log_pdf_execute():
 
 def test_log_pdf_result():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -157,18 +157,20 @@ def test_log_pdf_result():
         
         assert type(result) is np.float64
 
-def test_log_pdf_wrong_before_fit():
-    estimators = get_estimator_instances()
+def test_log_pdf_result_before_fit():
+    N=10
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         x = np.random.randn(est.D)
         
         for est in estimators:
-            assert_raises(RuntimeError, est.log_pdf, x)
+            result = est.log_pdf(x)
+            assert_allclose(result, 0)
 
 def test_log_pdf_wrong_input_type():
     N = 10
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -178,7 +180,7 @@ def test_log_pdf_wrong_input_type():
 
 def test_log_pdf_wrong_input_shape():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -189,7 +191,7 @@ def test_log_pdf_wrong_input_shape():
 
 def test_log_pdf_wrong_input_dim():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -200,7 +202,7 @@ def test_log_pdf_wrong_input_dim():
 
 def test_grad_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -210,7 +212,7 @@ def test_grad_execute():
 
 def test_grad_result():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -223,17 +225,19 @@ def test_grad_result():
         assert len(result) == est.D
 
 def test_grad_wrong_before_fit():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         x = np.random.randn(est.D)
         
         for est in estimators:
-            assert_raises(RuntimeError, est.grad, x)
+            result = est.grad(x)
+            assert_allclose(result, np.zeros(est.D))
 
 def test_grad_wrong_input_type():
     N = 10
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -243,7 +247,7 @@ def test_grad_wrong_input_type():
 
 def test_grad_wrong_input_shape():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -254,7 +258,7 @@ def test_grad_wrong_input_shape():
 
 def test_grad_wrong_input_dim():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -265,7 +269,7 @@ def test_grad_wrong_input_dim():
 
 def test_objective_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -274,7 +278,7 @@ def test_objective_execute():
 
 def test_objective_result():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -283,19 +287,9 @@ def test_objective_result():
         
         assert type(result) is np.float64
 
-def test_objective_wrong_before_fit():
-    N = 100
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        
-        for est in estimators:
-            assert_raises(RuntimeError, est.objective, X)
-
 def test_objective_wrong_input_type():
     N = 10
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -305,7 +299,7 @@ def test_objective_wrong_input_type():
 
 def test_objective_wrong_input_shape():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -316,7 +310,7 @@ def test_objective_wrong_input_shape():
 
 def test_objective_wrong_input_dim():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -327,7 +321,7 @@ def test_objective_wrong_input_dim():
 
 def test_xvalidate_objective_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -336,7 +330,7 @@ def test_xvalidate_objective_execute():
 
 def test_xvalidate_objective_result():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -350,7 +344,7 @@ def test_xvalidate_objective_result():
 
 def test_xvalidate_objective_wrong_input_type():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -360,7 +354,7 @@ def test_xvalidate_objective_wrong_input_type():
         
 def test_xvalidate_objective_wrong_input_dim_X():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D, 1)
@@ -368,7 +362,7 @@ def test_xvalidate_objective_wrong_input_dim_X():
 
 def test_xvalidate_objective_wrong_input_shape_X():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D + 1)
@@ -376,7 +370,7 @@ def test_xvalidate_objective_wrong_input_shape_X():
 
 def test_xvalidate_objective_wrong_input_negative_int():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D + 1)
@@ -384,19 +378,22 @@ def test_xvalidate_objective_wrong_input_negative_int():
         assert_raises(ValueError, est.xvalidate_objective, X=X, num_folds=3, num_repetitions=0)
 
 def test_get_parameters_finite():
-    names = get_instace_KernelExpFiniteGaussian().get_parameter_names()
+    N=10
+    names = get_instace_KernelExpFiniteGaussian(N).get_parameter_names()
     assert "gamma" in names
     assert "lmbda" in names
     assert len(names) == 2
 
 def test_get_parameters_lite():
-    names = get_instace_KernelExpLiteGaussian().get_parameter_names()
+    N=10
+    names = get_instace_KernelExpLiteGaussian(N).get_parameter_names()
     assert "sigma" in names
     assert "lmbda" in names
     assert len(names) == 2
 
 def test_get_parameters():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for estimator in estimators:
         param_dict = estimator.get_parameters()
@@ -404,7 +401,8 @@ def test_get_parameters():
             assert getattr(estimator, name) == value
 
 def test_set_parameters_from_dict():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for estimator in estimators:
         param_dict = estimator.get_parameters()
@@ -419,7 +417,8 @@ def test_set_parameters_from_dict():
             assert param_dict_new[name] == param_dict_old[name] + 1
         
 def test_set_parameters_from_dict_wrong_input_type():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for estimator in estimators:
         assert_raises(TypeError, estimator.set_parameters_from_dict, None)
@@ -427,7 +426,8 @@ def test_set_parameters_from_dict_wrong_input_type():
         assert_raises(TypeError, estimator.set_parameters_from_dict, [])
         
 def test_set_parameters_from_dict_wrong_input_parameters():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for estimator in estimators:
         param_dict = estimator.get_parameters()
@@ -436,7 +436,7 @@ def test_set_parameters_from_dict_wrong_input_parameters():
 
 def test_update_fit_if_exists_execute():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -447,7 +447,8 @@ def test_update_fit_if_exists_execute():
             est.update_fit(x)
 
 def test_update_fit_if_exists_has_n_equals_0():
-    estimators = get_estimator_instances()
+    N=10
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         if hasattr(est, 'update_fit'):
@@ -456,7 +457,7 @@ def test_update_fit_if_exists_has_n_equals_0():
 
 def test_update_fit_if_exists_n_batch_fit():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -466,7 +467,7 @@ def test_update_fit_if_exists_n_batch_fit():
 
 def test_update_fit_if_exists_n_increases():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -477,7 +478,7 @@ def test_update_fit_if_exists_n_increases():
 
 def test_update_fit_if_exists_equals_batch():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -492,18 +493,9 @@ def test_update_fit_if_exists_equals_batch():
             log_pdf_online = est.log_pdf_multiple(merged)
             assert_allclose(log_pdf_online, log_pdf_batch)
 
-def test_update_fit_if_exists_wrong_not_yet_fitted():
-    estimators = get_estimator_instances()
-    
-    for est in estimators:
-        x = np.random.randn(est.D)
-        
-        if hasattr(est, 'update_fit'):
-            assert_raises(RuntimeError, est.update_fit, x)
-
 def test_update_fit_if_exists_wrong_input_type():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -516,7 +508,7 @@ def test_update_fit_if_exists_wrong_input_type():
             
 def test_update_fit_if_exists_wrong_input_shape():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)
@@ -528,7 +520,7 @@ def test_update_fit_if_exists_wrong_input_shape():
             
 def test_update_fit_if_exists_wrong_input_dims():
     N = 100
-    estimators = get_estimator_instances()
+    estimators = get_estimator_instances(N)
     
     for est in estimators:
         X = np.random.randn(N, est.D)

@@ -1,10 +1,7 @@
-from scipy.misc.common import logsumexp
-
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
     gaussian_kernel_grad
 from kernel_exp_family.tools.assertions import assert_array_shape
-from kernel_hmc.tools.math import log_mean_exp
 import numpy as np
 
 
