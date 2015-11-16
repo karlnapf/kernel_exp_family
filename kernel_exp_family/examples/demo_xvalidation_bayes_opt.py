@@ -1,28 +1,11 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
-from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
+from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch,\
+    plot_bayesopt_model_1d
 from kernel_exp_family.examples.tools import pdf_grid, visualise_array
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-def visualise_objective():
-    # plot cost function learned through Bayesian optimisation, if 1D
-    if len(param_bounds) == 1:
-        bounds = param_bounds[param_bounds.keys()[0]]
-        x = np.linspace(bounds[0], bounds[1], 500)
-        mu, s2 = bo.model.predict(x[:, None])
-        
-        plt.figure()
-        plt.plot(x, mu, 'b-')
-        lower = mu - 1.96 * np.sqrt(s2)
-        upper = mu + 1.96 * np.sqrt(s2)
-        plt.plot(x, lower, 'b--')
-        plt.plot(x, upper, 'b--')
-        plt.plot(np.ravel(bo.X), bo.Y, 'rx')
-        plt.plot([bo.xbest, bo.xbest], [lower, upper], 'r-')
-        plt.title("objective model")
-        plt.grid(True)
 
 def visualise_fit(est):
     # visualise found fit
@@ -82,8 +65,10 @@ if __name__ == '__main__':
     visualise_fit(est)
     plt.suptitle("Original fit %s\nOptimised over: %s" % 
              (str(est.get_parameters()), str(param_bounds)))
-    visualise_objective()
-    plt.suptitle("Objective")
+    if len(param_bounds) == 1:
+        plt.figure()
+        plot_bayesopt_model_1d(bo)
+        plt.title("Objective")
     
     # now change data, with different length scale
     X = np.random.randn(200, D) * .1
@@ -99,7 +84,10 @@ if __name__ == '__main__':
     visualise_fit(est)
     plt.suptitle("New fit %s\nOptimised over: %s" % 
              (str(est.get_parameters()), str(param_bounds)))
-    visualise_objective()
-    plt.suptitle("New objective")
+    
+    if len(param_bounds) == 1:
+        plt.figure()
+        plot_bayesopt_model_1d(bo)
+        plt.title("New objective")
     
     plt.show()

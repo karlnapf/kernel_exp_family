@@ -2,8 +2,12 @@ from pybo import inits, recommenders, solvers, policies
 import reggie
 from reggie.means._core import Mean
 
+from kernel_exp_family.tools.log import Log
+import matplotlib.pyplot as plt
 import numpy as np
 
+
+logger = Log.get_logger()
 
 class GPMean(Mean):
     """
@@ -50,6 +54,8 @@ class BayesOptSearch(object):
         self.initialised = False
 
     def _init_model(self, n_initial, previous_model=None):
+        logger.info("Initial fitting using %d points" % n_initial)
+        
         # get initial data and some test points.
         self.X = list(inits.init_latin(self.bounds, n_initial))
         self.Y = [self._eval(x) for x in self.X]
@@ -102,6 +108,7 @@ class BayesOptSearch(object):
         if not self.initialised:
             self._init_model(n_initial=self.n_initial)
         
+        logger.info("Optimising %d iterations" % num_iter)
         for _ in range(num_iter):
             index = policies.EI(self.model, self.bounds, self.X)
             xnext, _ = solvers.solve_lbfgs(index, self.bounds)
@@ -136,14 +143,32 @@ class BayesOptSearch(object):
         param_dict = self._search_domain_to_param_dict(x)
         
         self.estimator.set_parameters_from_dict(param_dict)
-        O = self.estimator.xvalidate_objective(self.data)
+        
+        # objective wants to be minimised, but Bayesian optimisation maximises
+        O = -self.estimator.xvalidate_objective(self.data)
+        avg = np.mean(O)
         
         if self.objective_log:
-            objective = np.log(-np.mean(O) + self.log_bound)
+            objective = np.log(avg + self.log_bound)
             if np.isnan(objective):
                 raise RuntimeError("Objective function (%f) plus log-bound (%f) was negative. Cannot take log. Increase log_bound by at least %f to resolve."
-                                   % (-np.mean(O), self.log_bound, np.abs(-np.mean(O) + self.log_bound)))
+                                   % (avg, self.log_bound, np.abs(-np.mean(O) + self.log_bound)))
         else:
-            objective = -np.mean(O)
+            objective = avg
             
         return objective
+
+def plot_bayesopt_model_1d(bo):
+    assert len(bo.param_bounds) == 1
+    
+    x = np.linspace(bo.bounds[0,0], bo.bounds[0,1], 100)
+    mu, s2 = bo.model.predict(x[:, None])
+    
+    plt.plot(x, mu, 'b-')
+    lower = mu - 1.96 * np.sqrt(s2)
+    upper = mu + 1.96 * np.sqrt(s2)
+    plt.plot(x, lower, 'b--')
+    plt.plot(x, upper, 'b--')
+    plt.plot(np.ravel(bo.X), bo.Y, 'rx')
+    plt.plot([bo.xbest, bo.xbest], [lower, upper], 'r-')
+    plt.grid(True)
