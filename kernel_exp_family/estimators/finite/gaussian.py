@@ -307,19 +307,16 @@ class KernelExpFiniteGaussian(EstimatorBase):
         return np.dot(grad, self.theta)
     
     def log_pdf_multiple(self, X):
-        if self.theta is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         Phi = feature_map(X, self.omega, self.u)
         return np.dot(Phi, self.theta)
     
     def objective(self, X):
-        if self.theta is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        return objective(X, self.theta, self.lmbda, self.omega, self.u, self.b, self.C)
+        # note we need to recompute b and C here
+        return objective(X, self.theta, self.lmbda, self.omega, self.u)
 
     def get_parameter_names(self):
         return ['gamma', 'lmbda']
