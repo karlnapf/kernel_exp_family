@@ -1,3 +1,4 @@
+from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.examples.tools import pdf_grid, visualise_array
@@ -41,7 +42,6 @@ def visualise_fit(est):
     plt.tight_layout()
     
 
-
 if __name__ == '__main__':
     """
     This simple demo demonstrates how to select the kernel parameter for the lite
@@ -56,12 +56,17 @@ if __name__ == '__main__':
     
     # fit model to samples from a standard Gaussian
     X = np.random.randn(N, D)
-    est = KernelExpLiteGaussian(sigma=1, lmbda=.1, D=D)
+    
+    # use any of the below models
+    est = KernelExpLiteGaussian(sigma=1, lmbda=.001, D=D, N=N)
+    est = KernelExpFiniteGaussian(gamma=.5, lmbda=.001, m=N, D=D)
+    est.fit(X)
+    
     
     # specify bounds of parameters to search for
     param_bounds = {
-#               'lmbda': [-3,-1], # fixed lmbda, uncomment to include in search
-              'sigma': [-3, 8],
+#             'lmbda': [-5,0], # fixed lmbda, uncomment to include in search
+              'gamma': [-5, 1],
               }
     
     # oop interface for optimising and using results
