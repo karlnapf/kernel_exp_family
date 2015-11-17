@@ -2,28 +2,10 @@ from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch,\
     plot_bayesopt_model_1d
-from kernel_exp_family.examples.tools import pdf_grid, visualise_array
+from kernel_exp_family.examples.tools import visualise_fit
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-def visualise_fit(est):
-    # visualise found fit
-    plt.figure()
-    Xs = np.linspace(-5, 5)
-    Ys = np.linspace(-5, 5)
-    D, G = pdf_grid(Xs, Ys, est)
-    
-    plt.subplot(121)
-    visualise_array(Xs, Ys, D, X)
-    plt.title("estimate log pdf")
-    
-    plt.subplot(122)
-    visualise_array(Xs, Ys, G, X)
-    plt.title("estimate gradient norm")
-    
-    plt.tight_layout()
-    
 
 if __name__ == '__main__':
     """
@@ -40,54 +22,59 @@ if __name__ == '__main__':
     # fit model to samples from a standard Gaussian
     X = np.random.randn(N, D)
     
-    # use any of the below models
-    est = KernelExpLiteGaussian(sigma=1, lmbda=.001, D=D, N=N)
-    est = KernelExpFiniteGaussian(gamma=.5, lmbda=.001, m=N, D=D)
-    est.fit(X)
+    # use any of the below models, might have to change parameter bounds
+    estimators = [
+                  KernelExpFiniteGaussian(sigma=1., lmbda=.001, m=N, D=D),
+                  KernelExpLiteGaussian(sigma=1., lmbda=.001, D=D, N=N)
+                  ]
     
-    
-    # specify bounds of parameters to search for
-    param_bounds = {
-#             'lmbda': [-5,0], # fixed lmbda, uncomment to include in search
-              'gamma': [-5, 1],
-              }
-    
-    # oop interface for optimising and using results
-    # objective is not put through log here, if it is, might want to bound away from zero
-    bo = BayesOptSearch(est, X, param_bounds, objective_log=False, objective_log_bound=100,
-                        n_initial=5)
-    
-    # optimisation starts here, use results and apply to model
-    best_params = bo.optimize(num_iter=5)
-    est.set_parameters_from_dict(best_params)
-    est.fit(X)
-    
-    visualise_fit(est)
-    plt.suptitle("Original fit %s\nOptimised over: %s" % 
-             (str(est.get_parameters()), str(param_bounds)))
-    if len(param_bounds) == 1:
-        plt.figure()
-        plot_bayesopt_model_1d(bo)
-        plt.title("Objective")
-    
-    # now change data, with different length scale
-    X = np.random.randn(200, D) * .1
-    
-    # reset optimiser, which but initialise from old model, sample 3 random point to update
-    best_params = bo.re_initialise(new_data=X, n_initial=3)
-    
-    # this optimisation now runs on the "new" objective
-    best_params = bo.optimize(num_iter=3)
-    est.set_parameters_from_dict(best_params)
-    est.fit(X)
-    
-    visualise_fit(est)
-    plt.suptitle("New fit %s\nOptimised over: %s" % 
-             (str(est.get_parameters()), str(param_bounds)))
-    
-    if len(param_bounds) == 1:
-        plt.figure()
-        plot_bayesopt_model_1d(bo)
-        plt.title("New objective")
-    
-    plt.show()
+    for est in estimators:
+        print(est.__class__.__name__)
+        
+        est.fit(X)
+        
+        # specify bounds of parameters to search for
+        param_bounds = {
+    #             'lmbda': [-5,0], # fixed lmbda, uncomment to include in search
+                'sigma': [-2,3],
+                  }
+        
+        # oop interface for optimising and using results
+        # objective is not put through log here, if it is, might want to bound away from zero
+        bo = BayesOptSearch(est, X, param_bounds, objective_log=False, objective_log_bound=100,
+                            n_initial=5)
+        
+        # optimisation starts here, use results and apply to model
+        best_params = bo.optimize(num_iter=5)
+        est.set_parameters_from_dict(best_params)
+        est.fit(X)
+        
+        visualise_fit(est, X)
+        plt.suptitle("Original fit %s\nOptimised over: %s" % 
+                 (str(est.get_parameters()), str(param_bounds)))
+        if len(param_bounds) == 1:
+            plt.figure()
+            plot_bayesopt_model_1d(bo)
+            plt.title("Objective")
+        
+        # now change data, with different length scale
+        X = np.random.randn(200, D) * .1
+        
+        # reset optimiser, which but initialise from old model, sample 3 random point to update
+        best_params = bo.re_initialise(new_data=X, n_initial=3)
+        
+        # this optimisation now runs on the "new" objective
+        best_params = bo.optimize(num_iter=3)
+        est.set_parameters_from_dict(best_params)
+        est.fit(X)
+        
+        visualise_fit(est, X)
+        plt.suptitle("New fit %s\nOptimised over: %s" % 
+                 (str(est.get_parameters()), str(param_bounds)))
+        
+        if len(param_bounds) == 1:
+            plt.figure()
+            plot_bayesopt_model_1d(bo)
+            plt.title("New objective")
+        
+        plt.show()

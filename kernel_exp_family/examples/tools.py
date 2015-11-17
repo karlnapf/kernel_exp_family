@@ -24,3 +24,20 @@ def pdf_grid(Xs, Ys, est):
             G[j, i] = np.linalg.norm(est.grad(point))
     
     return D, G
+
+def visualise_fit(est, X):
+    # visualise found fit
+    plt.figure()
+    Xs = np.linspace(-5, 5)
+    Ys = np.linspace(-5, 5)
+    D, G = pdf_grid(Xs, Ys, est)
+    
+    plt.subplot(121)
+    visualise_array(Xs, Ys, D, X)
+    plt.title("estimate log pdf")
+    
+    plt.subplot(122)
+    visualise_array(Xs, Ys, G, X)
+    plt.title("estimate gradient norm")
+    
+    plt.tight_layout()

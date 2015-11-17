@@ -29,7 +29,7 @@ if __name__ == '__main__':
     
     # grid search
     for i, sigma in enumerate(log_sigmas):
-        est = KernelExpLiteGaussian(np.exp(sigma), lmbda, D)
+        est = KernelExpLiteGaussian(np.exp(sigma), lmbda, D, N)
         
         # this is an array num_repetitions x num_folds, each containing a objective
         xval_result = est.xvalidate_objective(X, num_folds=5, num_repetitions=2)

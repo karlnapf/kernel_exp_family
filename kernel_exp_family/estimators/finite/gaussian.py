@@ -6,58 +6,14 @@ import numpy as np
 import scipy as sp
 
 
-def sample_basis(D, m, gamma):
+def sample_basis(D, m, sigma):
+    # rbf sampler is parametrised in gamma, which is at the same time
+    # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
+    gamma = 1./sigma
     omega = gamma * np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     
     return omega, u
-
-def sample_basis_rational_quadratic(D, m, alpha, beta=1., return_taus=False):
-    """
-    Given a Gaussian kernel of the form
-    k(x,y) = \exp(-\gamma  ||x-y||^2)
-           = \exp(-0.5  \tau   ||x-y||^2),
-           
-    where
-    \gamma = 0.5  \tau,
-    
-    this method returns a random Fourier features basis for an infinite mixture
-    of Gaussian kernels (aka rational quadratic kernel)
-    k(x,y) = \int d\gamma p(\tau) k(x,y),
-    where p(\tau) is a Gamma distribution
-    \tau \sim \texttt{Gamma}(\tau | \alpha,\beta), parametrised with
-    \alpha - shape parameter
-    \beta -  mean parameter (mean=shape*scale = shape/rate)
-    
-    The parametrisation is such that alpha, beta correspond to the closed form RQ kernel
-    k(x,y) = (1+ (||x-y||^2 \tau) / (2 \alpha)),
-           = (1+ (||x-y||^2) / (2 \alpha \sigma^2)),
-    where \tau = \sigma^2, which is the standard form given in textbooks.
-    
-    I.e. in the GPML book, Chapter 4.
-    """
-    
-    omega = np.zeros((D, m))
-    taus = np.zeros(m)
-    
-    # sample from mixture of Gaussians
-    # where the length scales are distributed according to a Gamma
-    for i in range(m):
-        # each sample has a different length scale
-        #     
-        #     mean = shape/rate = shape * scale
-        # <=> scale = mean/shape = beta/alpha
-        tau = np.random.gamma(shape=alpha, scale=beta / alpha)
-        taus[i] = tau
-        gamma = 0.5 * tau
-        omega[:, i] = gamma * np.random.randn(D)
-    
-    u = np.random.uniform(0, 2 * np.pi, m)
-    
-    if return_taus:
-        return omega, u, taus
-    else:
-        return omega, u
 
 def feature_map_single(x, omega, u):
     m = 1 if np.isscalar(u) else len(u)
@@ -254,12 +210,12 @@ def update_C(x, C, n, omega, u):
     return C
 
 class KernelExpFiniteGaussian(EstimatorBase):
-    def __init__(self, gamma, lmbda, m, D):
-        self.gamma = gamma
+    def __init__(self, sigma, lmbda, m, D):
+        self.sigma = sigma 
         self.lmbda = lmbda
         self.m = m
         self.D = D
-        self.omega, self.u = sample_basis(D, m, gamma)
+        self.omega, self.u = sample_basis(D, m, sigma)
         
         # components of linear system, stored for potential online updating
         self.b = np.zeros(m)
@@ -319,10 +275,10 @@ class KernelExpFiniteGaussian(EstimatorBase):
         return objective(X, self.theta, self.lmbda, self.omega, self.u)
 
     def get_parameter_names(self):
-        return ['gamma', 'lmbda']
+        return ['sigma', 'lmbda']
     
     def set_parameters_from_dict(self, param_dict):
         EstimatorBase.set_parameters_from_dict(self, param_dict)
         
         # update basis
-        self.omega, self.u = sample_basis(self.D, self.m, self.gamma)
+        self.omega, self.u = sample_basis(self.D, self.m, self.sigma)
