@@ -7,10 +7,10 @@ import numpy as np
 
 
 def get_instace_KernelExpFiniteGaussian(N):
-    gamma = 2.
+    sigma = 2.
     lmbda = 1.
     D = 2
-    return KernelExpFiniteGaussian(gamma, lmbda, N, D)
+    return KernelExpFiniteGaussian(sigma, lmbda, N, D)
 
 def get_instace_KernelExpLiteGaussian(N):
     sigma = 2.
@@ -380,7 +380,7 @@ def test_xvalidate_objective_wrong_input_negative_int():
 def test_get_parameters_finite():
     N=10
     names = get_instace_KernelExpFiniteGaussian(N).get_parameter_names()
-    assert "gamma" in names
+    assert "sigma" in names
     assert "lmbda" in names
     assert len(names) == 2
 
