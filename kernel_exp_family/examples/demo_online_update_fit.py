@@ -22,10 +22,10 @@ if __name__ == '__main__':
     # arbitrary choice of parameters here
     # note that m is set to N in order to call update_fit immediately,
     # as throws an error if called with less data
-    gamma = 0.5
+    sigma = 2
     lmbda = 0.001
     m = N
-    est = KernelExpFiniteGaussian(gamma, lmbda, m, D)
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
     est.fit(X)
 
     # only for plotting
