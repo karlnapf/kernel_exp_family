@@ -6,6 +6,14 @@ def incomplete_cholesky_gaussian(X, sigma, eta, power=1, blocksize=100):
     kernel = lambda X, Y: gaussian_kernel(X, Y, sigma=sigma)
     return incomplete_cholesky(X, kernel, eta, power, blocksize)
 
+def incomplete_cholesky_new_point_gaussian(X, x, sigma, I=None, R=None, nu=None):
+    kernel = lambda X, Y: gaussian_kernel(X, Y, sigma=sigma)
+    return incomplete_cholesky_new_point(X, x, kernel, I, R, nu)
+
+def incomplete_cholesky_new_points_gaussian(X, Y, sigma, I=None, R=None, nu=None):
+    kernel = lambda X, Y: gaussian_kernel(X, Y, sigma=sigma)
+    return incomplete_cholesky_new_points(X, Y, kernel, I, R, nu)
+
 def incomplete_cholesky(X, kernel, eta, power=1, blocksize=100):
     """
     Computes the incomplete Cholesky factorisation of the kernel matrix defined

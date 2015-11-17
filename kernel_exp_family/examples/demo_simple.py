@@ -1,6 +1,7 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
-from kernel_exp_family.examples.tools import pdf_grid, visualise_array
+from kernel_exp_family.estimators.lite.gaussian_low_rank import KernelExpLiteGaussianLowRank
+from kernel_exp_family.examples.tools import visualise_fit
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -17,6 +18,12 @@ def get_KernelExpLiteGaussian_instance(D, N):
     sigma = 1.
     lmbda = 0.01
     return KernelExpLiteGaussian(sigma, lmbda, D, N)
+
+def get_KernelExpLiteGaussianLowRank_instance(D, N):
+    # arbitrary choice of parameters here
+    sigma = 1.
+    lmbda = 0.01
+    return KernelExpLiteGaussianLowRank(sigma, lmbda, D, N, eta=.1)
 
 class ground_truth():
     def __init__(self):
@@ -41,43 +48,27 @@ if __name__ == '__main__':
     X = np.random.randn(N, D)
     
     # estimator API object, try different estimators here
-    est = get_KernelExpFiniteGaussian_instance(D)
-    est = get_KernelExpLiteGaussian_instance(D, N)
-    est.fit(X)
+    estimators = [
+                  get_KernelExpFiniteGaussian_instance(D),
+                  get_KernelExpLiteGaussian_instance(D, N),
+                  get_KernelExpLiteGaussianLowRank_instance(D, N)
+                  ]
     
-    # main interface for log pdf and gradient
-    print est.log_pdf_multiple(np.random.randn(2, 2))
-    print est.log_pdf(np.zeros(D))
-    print est.grad(np.zeros(D))
+    for est in estimators:
+        est.fit(X)
+        
+        # main interface for log pdf and gradient
+        print est.log_pdf_multiple(np.random.randn(2, 2))
+        print est.log_pdf(np.zeros(D))
+        print est.grad(np.zeros(D))
+        
+        # score matching objective function (can be used for parameter tuning)
+        print est.objective(X)
+        
+        visualise_fit(est, X)
+        plt.suptitle("Estimated with %s" % str(est.__class__.__name__))
     
-    # score matching objective function (can be used for parameter tuning)
-    print est.objective(X)
     
-    # compute log-pdf and gradients over a grid and visualise
-    Xs = np.linspace(-5, 5)
-    Ys = np.linspace(-5, 5)
-    D, G = pdf_grid(Xs, Ys, est)
-    
-    D_true, G_true = pdf_grid(Xs, Ys, ground_truth())
-    
-    # visualise log-pdf, gradients, and ground truth
-    plt.figure(figsize=(5, 5))
-    
-    plt.subplot(221)
-    visualise_array(Xs, Ys, D, X)
-    plt.title("estimate log pdf")
-    
-    plt.subplot(222)
-    visualise_array(Xs, Ys, G, X)
-    plt.title("estimate gradient norm")
-    
-    plt.subplot(223)
-    visualise_array(Xs, Ys, D_true, X)
-    plt.title("true log pdf")
-    
-    plt.subplot(224)
-    visualise_array(Xs, Ys, G_true, X)
-    plt.title("true gradient norm")
-    
-    plt.tight_layout()
+    visualise_fit(ground_truth(), X)
+    plt.suptitle("Ground truth")
     plt.show()

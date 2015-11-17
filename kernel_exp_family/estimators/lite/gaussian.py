@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
@@ -5,6 +7,7 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel, \
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.tools.log import Log
 import numpy as np
+
 
 logger = Log.get_logger()
 
@@ -123,37 +126,32 @@ class KernelExpLiteGaussian(EstimatorBase):
         else:
             self.X = np.copy(X)
             
+        self.alpha = self.fit_wrapper_()
+    
+    @abstractmethod
+    def fit_wrapper_(self):
         self.K = gaussian_kernel(self.X, sigma=self.sigma)
-        
-        self.alpha = fit(self.X, self.X, self.sigma, self.lmbda, self.K)
+        return fit(self.X, self.X, self.sigma, self.lmbda, self.K)
     
     def log_pdf(self, x):
-        if self.alpha is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(x, ndim=1, dims={0: self.D})
         
         k = gaussian_kernel(self.X, x.reshape(1, self.D), self.sigma)[:, 0]
         return np.dot(self.alpha, k)
     
     def grad(self, x):
-        if self.alpha is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(x, ndim=1, dims={0: self.D})
     
         k = gaussian_kernel_grad(x, self.X, self.sigma)
         return np.dot(self.alpha, k)
     
     def log_pdf_multiple(self, X):
-        if self.alpha is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         k = gaussian_kernel(self.X, X, self.sigma)
         return np.dot(self.alpha, k)
     
     def objective(self, X):
-        if self.alpha is None:
-            raise RuntimeError("Model not fitted yet.")
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         return objective(self.X, X, self.sigma, self.lmbda, self.alpha, self.K)

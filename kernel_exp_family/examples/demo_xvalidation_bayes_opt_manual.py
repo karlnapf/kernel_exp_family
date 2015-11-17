@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # use any of the below models, might have to change parameter bounds
     estimators = [
                   KernelExpFiniteGaussian(sigma=1., lmbda=.001, m=N, D=D),
-                  KernelExpLiteGaussian(sigma=1., lmbda=.001, D=D, N=N)
+                  KernelExpLiteGaussian(sigma=1., lmbda=.001, D=D, N=N),
                   ]
     
     for est in estimators:

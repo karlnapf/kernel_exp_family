@@ -112,7 +112,7 @@ def test_compute_C_matches_sym():
     C = gaussian.compute_C(Z, Z, K, sigma=sigma)
     assert_allclose(C, C_sym)
 
-def test_score_matching_sym_matches_full():
+def test_fit_sym_matches_full():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -123,7 +123,7 @@ def test_score_matching_sym_matches_full():
     a_cholesky_cg = develop_gaussian_low_rank.fit_sym(Z, sigma, lmbda, L=R.T)
     assert_allclose(a, a_cholesky_cg, atol=3)
 
-def test_score_matching_matches_sym():
+def test_fit_matches_sym():
     sigma = 1.
     lmbda = 1.
     Z = np.random.randn(100, 2)
@@ -141,7 +141,7 @@ def test_score_matching_matches_sym():
     assert_allclose(a, a_sym)
 
 @timed(5)
-def test_score_matching_sym_time():
+def test_fit_sym_time():
     sigma = 1.
     lmbda = 1.
     N = 20000

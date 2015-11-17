@@ -34,10 +34,10 @@ def visualise_fit(est, X):
     
     plt.subplot(121)
     visualise_array(Xs, Ys, D, X)
-    plt.title("estimate log pdf")
+    plt.title("log pdf")
     
     plt.subplot(122)
     visualise_array(Xs, Ys, G, X)
-    plt.title("estimate gradient norm")
+    plt.title("gradient norm")
     
     plt.tight_layout()
