@@ -1,5 +1,5 @@
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
-from kernel_exp_family.examples.tools import pdf_grid, visualise_array
+from kernel_exp_family.examples.tools import visualise_fit
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -56,19 +56,5 @@ if __name__ == '__main__':
     
     est.sigma = np.exp(best_log_sigma)
     est.fit(X)
-    plt.figure()
-    Xs = np.linspace(-5, 5)
-    Ys = np.linspace(-5, 5)
-    D, G = pdf_grid(Xs, Ys, est)
-    
-    plt.subplot(121)
-    visualise_array(Xs, Ys, D, X)
-    plt.title("estimate log pdf")
-    
-    plt.subplot(122)
-    visualise_array(Xs, Ys, G, X)
-    plt.title("estimate gradient norm")
-    
-    plt.suptitle("Best sigma fit")
-    plt.tight_layout()
+    visualise_fit(est, X)
     plt.show()
