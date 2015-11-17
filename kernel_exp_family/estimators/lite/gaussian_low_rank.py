@@ -2,8 +2,7 @@ from abc import abstractmethod
 from scipy.sparse.linalg.interface import LinearOperator
 from scipy.sparse.linalg.isolve.iterative import bicgstab
 
-from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian,\
-    KernelExpLiteGaussianAdaptive
+from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.kernels.incomplete_cholesky import incomplete_cholesky_gaussian, \
     incomplete_cholesky_new_points_gaussian
