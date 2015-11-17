@@ -1,9 +1,12 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
+from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
     gaussian_kernel_grad
 from kernel_exp_family.tools.assertions import assert_array_shape
+from kernel_exp_family.tools.log import Log
 import numpy as np
 
+logger = Log.get_logger()
 
 def compute_b(X, Y, K_XY, sigma):
     assert X.shape[1] == Y.shape[1]
@@ -157,3 +160,36 @@ class KernelExpLiteGaussian(EstimatorBase):
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']
+
+class KernelExpLiteGaussianAdaptive(KernelExpLiteGaussian):
+    def __init__(self, sigma, lmbda, D, N):
+        KernelExpLiteGaussian.__init__(self, sigma, lmbda, D, N)
+        
+        self.bo = None
+        self.param_bounds = {
+                             'sigma': [-3,8]
+                             }
+        self.n_initial = 3
+        self.num_iter = 3
+        self.minimum_size_learning = N
+        
+        self.learning_parameters = False
+        
+    def fit(self, X):
+        # avoid infinite recursion from x-validation fit call
+        if not self.learning_parameters and len(X)>=self.minimum_size_learning:
+            logger.info("Bayesian optimisation for learning parameters")
+            self.learning_parameters = True
+            if self.bo is None:
+                self.bo = BayesOptSearch(self, X, self.param_bounds, n_initial=self.n_initial)
+                best_params = self.bo.optimize(self.num_iter)
+            else:
+                self.bo.re_initialise(X, 1)
+                best_params = self.bo.optimize(1)
+            
+            self.set_parameters_from_dict(best_params)
+            self.learning_parameters = False
+            logger.info("Learnt %s" % str(self.get_parameters()))
+        
+        # standard fit call from superclass
+        KernelExpLiteGaussian.fit(self, X)
