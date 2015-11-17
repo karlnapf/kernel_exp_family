@@ -12,11 +12,11 @@ def get_KernelExpFiniteGaussian_instance(D):
     m = 100
     return KernelExpFiniteGaussian(gamma, lmbda, m, D)
 
-def get_KernelExpLiteGaussian_instance(D):
+def get_KernelExpLiteGaussian_instance(D, N):
     # arbitrary choice of parameters here
     sigma = 1.
     lmbda = 0.01
-    return KernelExpLiteGaussian(sigma, lmbda, D)
+    return KernelExpLiteGaussian(sigma, lmbda, D, N)
 
 class ground_truth():
     def __init__(self):
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     
     # estimator API object, try different estimators here
     est = get_KernelExpFiniteGaussian_instance(D)
-    est = get_KernelExpLiteGaussian_instance(D)
+    est = get_KernelExpLiteGaussian_instance(D, N)
     est.fit(X)
     
     # main interface for log pdf and gradient
