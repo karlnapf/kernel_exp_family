@@ -1,88 +1,12 @@
 from choldate._choldate import cholupdate
 
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
+from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_single,\
+    rff_sample_basis, rff_feature_map_grad_single
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 import scipy as sp
 
-
-def sample_basis(D, m, sigma):
-    # rbf sampler is parametrised in gamma, which is at the same time
-    # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
-    gamma = 1./sigma
-    omega = gamma * np.random.randn(D, m)
-    u = np.random.uniform(0, 2 * np.pi, m)
-    
-    return omega, u
-
-def feature_map_single(x, omega, u):
-    m = 1 if np.isscalar(u) else len(u)
-    return np.cos(np.dot(x, omega) + u) * np.sqrt(2. / m)
-
-def feature_map(X, omega, u):
-    m = 1 if np.isscalar(u) else len(u)
-    
-    projection = np.dot(X, omega) + u
-    np.cos(projection, projection)
-    projection *= np.sqrt(2. / m)
-    return projection
-
-def feature_map_grad_d(X, omega, u, d):
-    m = 1 if np.isscalar(u) else len(u)
-    
-    projection = np.dot(X, omega) + u
-    np.sin(projection, projection)
-        
-    projection *= omega[d, :]
-    projection *= np.sqrt(2. / m)
-    return -projection
-
-def feature_map_grad2_d(X, omega, u, d):
-    Phi2 = feature_map(X, omega, u)
-    Phi2 *= omega[d, :] ** 2
-    
-    return -Phi2
-
-def feature_map_grad(X, omega, u):
-    # equal to the looped version, feature_map_grad_loop
-    # TODO make more effecient via vectorising
-    m = 1 if np.isscalar(u) else len(u)
-    N = X.shape[0]
-    D = X.shape[1]
-    
-    projections = np.zeros((D, N, m))
-    projection = np.dot(X, omega) + u
-    np.sin(projection, projection)
-    for d in range(D):
-        projections[d, :, :] = projection
-        projections[d, :, :] *= omega[d, :]
-    
-    projections *= -np.sqrt(2. / m)
-    return projections
-
-def feature_map_grad2(X, omega, u):
-    # equal to the looped version, feature_map_grad2_loop
-    # TODO make more effecient via vectorising
-    m = 1 if np.isscalar(u) else len(u)
-    N = X.shape[0]
-    D = X.shape[1]
-    
-    projections = np.zeros((D, N, m))
-    Phi2 = feature_map(X, omega, u)
-    for d in range(D):
-        projections[d, :, :] = -Phi2
-        projections[d, :, :] *= omega[d, :] ** 2
-        
-    return projections
-
-def feature_map_grad_single(x, omega, u):
-    D, m = omega.shape
-    grad = np.zeros((D, m))
-    
-    for d in range(D):
-        grad[d, :] = feature_map_grad_d(x, omega, u, d)
-    
-    return grad
 
 def compute_b(X, omega, u):
     assert len(X.shape) == 2
@@ -90,7 +14,7 @@ def compute_b(X, omega, u):
     D = X.shape[1]
     
     projections_sum = np.zeros(m)
-    Phi2 = feature_map(X, omega, u)
+    Phi2 = rff_feature_map(X, omega, u)
     for d in range(D):
         projections_sum += np.mean(-Phi2 * (omega[d, :] ** 2), 0)
         
@@ -118,7 +42,7 @@ def update_b(x, b, n, omega, u):
     m = omega.shape[1]
     
     projections_sum = np.zeros(m)
-    phi = feature_map_single(x, omega, u)
+    phi = rff_feature_map_single(x, omega, u)
     for d in range(D):
         # second derivative of feature map
         phi2 = -phi * (omega[d, :] ** 2)
@@ -215,7 +139,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.lmbda = lmbda
         self.m = m
         self.D = D
-        self.omega, self.u = sample_basis(D, m, sigma)
+        self.omega, self.u = rff_sample_basis(D, m, sigma)
         
         # components of linear system, stored for potential online updating
         self.b = np.zeros(m)
@@ -252,20 +176,20 @@ class KernelExpFiniteGaussian(EstimatorBase):
             raise RuntimeError("Model not fitted yet.")
         assert_array_shape(x, ndim=1, dims={0: self.D})
         
-        phi = feature_map_single(x, self.omega, self.u)
+        phi = rff_feature_map_single(x, self.omega, self.u)
         return np.dot(phi, self.theta)
     
     def grad(self, x):
         if self.theta is None:
             raise RuntimeError("Model not fitted yet.")
         
-        grad = feature_map_grad_single(x, self.omega, self.u)
+        grad = rff_feature_map_grad_single(x, self.omega, self.u)
         return np.dot(grad, self.theta)
     
     def log_pdf_multiple(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        Phi = feature_map(X, self.omega, self.u)
+        Phi = rff_feature_map(X, self.omega, self.u)
         return np.dot(Phi, self.theta)
     
     def objective(self, X):
@@ -281,4 +205,4 @@ class KernelExpFiniteGaussian(EstimatorBase):
         EstimatorBase.set_parameters_from_dict(self, param_dict)
         
         # update basis
-        self.omega, self.u = sample_basis(self.D, self.m, self.sigma)
+        self.omega, self.u = rff_sample_basis(self.D, self.m, self.sigma)

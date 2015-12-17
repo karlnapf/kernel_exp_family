@@ -65,3 +65,80 @@ def gaussian_kernel_grad(x, Y, sigma=1.):
     G = (2.0 / sigma) * (k.T * differences)
     return G
 
+def rff_sample_basis(D, m, sigma):
+    # rbf sampler is parametrised in gamma, which is at the same time
+    # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
+    gamma = 1./sigma
+    omega = gamma * np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    
+    return omega, u
+
+def rff_feature_map_single(x, omega, u):
+    m = 1 if np.isscalar(u) else len(u)
+    return np.cos(np.dot(x, omega) + u) * np.sqrt(2. / m)
+
+def rff_feature_map(X, omega, u):
+    m = 1 if np.isscalar(u) else len(u)
+    
+    projection = np.dot(X, omega) + u
+    np.cos(projection, projection)
+    projection *= np.sqrt(2. / m)
+    return projection
+
+def rff_feature_map_grad_d(X, omega, u, d):
+    m = 1 if np.isscalar(u) else len(u)
+    
+    projection = np.dot(X, omega) + u
+    np.sin(projection, projection)
+        
+    projection *= omega[d, :]
+    projection *= np.sqrt(2. / m)
+    return -projection
+
+def rff_feature_map_grad2_d(X, omega, u, d):
+    Phi2 = rff_feature_map(X, omega, u)
+    Phi2 *= omega[d, :] ** 2
+    
+    return -Phi2
+
+def rff_feature_map_grad(X, omega, u):
+    # equal to the looped version, rff_feature_map_grad_loop
+    # TODO make more efficient via vectorising
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    projections = np.zeros((D, N, m))
+    projection = np.dot(X, omega) + u
+    np.sin(projection, projection)
+    for d in range(D):
+        projections[d, :, :] = projection
+        projections[d, :, :] *= omega[d, :]
+    
+    projections *= -np.sqrt(2. / m)
+    return projections
+
+def rff_feature_map_grad2(X, omega, u):
+    # equal to the looped version, rff_feature_map_grad2_loop
+    # TODO make more efficient via vectorising
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    projections = np.zeros((D, N, m))
+    Phi2 = rff_feature_map(X, omega, u)
+    for d in range(D):
+        projections[d, :, :] = -Phi2
+        projections[d, :, :] *= omega[d, :] ** 2
+        
+    return projections
+
+def rff_feature_map_grad_single(x, omega, u):
+    D, m = omega.shape
+    grad = np.zeros((D, m))
+    
+    for d in range(D):
+        grad[d, :] = rff_feature_map_grad_d(x, omega, u, d)
+    
+    return grad
