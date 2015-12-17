@@ -1,14 +1,16 @@
+from nose import SkipTest
 from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory,\
-    compute_C_memory, _objective_sym_completely_manual,\
+from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory, \
+    compute_C_memory, _objective_sym_completely_manual, \
     _objective_sym_half_manual
-from kernel_exp_family.estimators.finite.gaussian import fit, objective,\
-    compute_b, compute_C, update_b, update_C, update_L_C
-from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d,\
-    rff_feature_map_grad_d
+from kernel_exp_family.estimators.finite.gaussian import fit, objective, \
+    compute_b, compute_C, update_b, update_C, update_L_C, \
+    KernelExpFiniteGaussian
+from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
+    rff_feature_map_grad_d, theano_available
 import numpy as np
 
 
@@ -315,3 +317,30 @@ def test_update_L_C_equals_batch():
 
     assert_allclose(L_C, L_C_batch)
 
+def test_hessian_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    sigma = 1.
+    lmbda = 1.
+    N = 100
+    D = 2
+    m = 10
+    X = np.random.randn(N, D)
+    
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    est.fit(X)
+    est.hessian(X[0])
+
+def test_gaussian_kernel_third_order_derivative_tensor_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    sigma = 1.
+    lmbda = 1.
+    N = 100
+    D = 2
+    m = 10
+    X = np.random.randn(N, D)
+    
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    est.fit(X)
+    est.gaussian_kernel_third_order_derivative_tensor(X[0])

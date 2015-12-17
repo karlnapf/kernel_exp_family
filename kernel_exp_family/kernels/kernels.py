@@ -2,6 +2,9 @@ from scipy.spatial.distance import squareform, pdist, cdist
 
 import numpy as np
 
+#########################
+# THEANO IMPLEMENTATION #
+#########################
 try:
     from theano import function
     from theano import tensor as T
@@ -26,7 +29,26 @@ if theano_available:
                                   sequences=T.arange(grad.shape[0]),
                                   non_sequences=[grad, x])
         return G3, updates
-        
+    
+    def get_expr_rff_feature_map_component(x, omega, u):
+        phi = T.cos(T.dot(x, omega) + u) * T.sqrt(2.)
+        return phi
+    
+    def get_expr_rff_feature_map_component_grad(x, omega, u):
+        expr = get_expr_rff_feature_map_component(x, omega, u)
+        return T.grad(expr, x)
+
+    def get_expr_rff_feature_map_component_hessian(x, omega, u):
+        expr = get_expr_rff_feature_map_component(x, omega, u)
+        return T.hessian(expr, x)
+    
+    def get_expr_rff_feature_map_component_third_order_tensor(x, omega, u):
+        grad = get_expr_rff_feature_map_component_grad(x, omega, u)
+        G3, updates = theano.scan(lambda i, grad, x: T.hessian(grad[i], x),
+                                  sequences=T.arange(grad.shape[0]),
+                                  non_sequences=[grad, x])
+        return G3, updates
+    
     # theano variables
     x = T.dvector('x')
     y = T.dvector('y')
@@ -39,6 +61,19 @@ if theano_available:
     
     G3, updates = get_expr_gaussian_kernel_third_order_tensor(x, y, sigma)
     gaussian_kernel_third_order_derivative_tensor_theano = function([x, y, sigma], G3, updates=updates)
+
+    omega = T.dvector('omega')
+    u = T.dscalar('u')
+    rff_feature_map_comp_theano = function(inputs=[x, omega, u], outputs=get_expr_rff_feature_map_component(x, omega, u))
+    rff_feature_map_comp_grad_theano = function(inputs=[x, omega, u], outputs=get_expr_rff_feature_map_component_grad(x, omega, u))
+    rff_feature_map_comp_hessian_theano = function(inputs=[x, omega, u], outputs=get_expr_rff_feature_map_component_hessian(x, omega, u))
+
+    G3, updates = get_expr_rff_feature_map_component_third_order_tensor(x, omega, u)
+    rff_feature_map_comp_third_order_tensor_theano = function([x, omega, u], G3, updates=updates)
+    
+#########################
+# MANUAL IMPLEMENTATION #
+#########################
 
 def gaussian_kernel(X, Y=None, sigma=1.):
     assert(len(X.shape) == 2)
@@ -68,7 +103,7 @@ def gaussian_kernel_grad(x, Y, sigma=1.):
 def rff_sample_basis(D, m, sigma):
     # rbf sampler is parametrised in gamma, which is at the same time
     # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
-    gamma = 1./sigma
+    gamma = 1. / sigma
     omega = gamma * np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     

@@ -3,15 +3,23 @@ from nose.tools import assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.kernels.develop.kernels import rff_feature_map_grad_loop,\
+from kernel_exp_family.kernels.develop.kernels import rff_feature_map_grad_loop, \
     rff_feature_map_grad2_loop
-from kernel_exp_family.kernels.kernels import gaussian_kernel_theano, \
-    gaussian_kernel_grad_theano, gaussian_kernel_hessian_theano, \
-    theano_available, gaussian_kernel_third_order_derivative_tensor_theano, gaussian_kernel, \
-    gaussian_kernel_grad, rff_feature_map_single, rff_feature_map,\
-    rff_feature_map_grad_d, rff_feature_map_grad2_d, rff_feature_map_grad,\
-    rff_feature_map_grad2, rff_feature_map_grad_single
+from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel, \
+    gaussian_kernel_grad, rff_feature_map_single, rff_feature_map, \
+    rff_feature_map_grad_d, rff_feature_map_grad2_d, rff_feature_map_grad, \
+    rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis
+
 import numpy as np
+
+
+if theano_available:
+    from kernel_exp_family.kernels.kernels import gaussian_kernel_theano, \
+    gaussian_kernel_grad_theano, gaussian_kernel_hessian_theano, \
+    gaussian_kernel_third_order_derivative_tensor_theano, \
+    rff_feature_map_comp_theano, rff_feature_map_comp_grad_theano, \
+    rff_feature_map_comp_hessian_theano, \
+    rff_feature_map_comp_third_order_tensor_theano
 
 
 def test_gaussian_kernel_theano_execute():
@@ -88,7 +96,7 @@ def test_gaussian_kernel_third_order_derivative_tensor_theano_execute():
     
     gaussian_kernel_third_order_derivative_tensor_theano(x, y, sigma)
 
-def test_feature_map():
+def test_rff_feature_map():
     x = 3.
     u = 2.
     omega = 2.
@@ -96,7 +104,7 @@ def test_feature_map():
     phi_manual = np.cos(omega * x + u) * np.sqrt(2.)
     assert_close(phi, phi_manual)
 
-def test_feature_map_single_equals_feature_map():
+def test_rff_feature_map_single_equals_feature_map():
     N = 10
     D = 20
     m = 3
@@ -110,7 +118,7 @@ def test_feature_map_single_equals_feature_map():
         phi = rff_feature_map_single(x, omega, u)
         assert_allclose(phis[i], phi)
 
-def test_feature_map_derivative_d_1n():
+def test_rff_feature_map_derivative_d_1n():
     X = np.array([[1.]])
     u = np.array([2.])
     omega = np.array([[2.]])
@@ -119,7 +127,7 @@ def test_feature_map_derivative_d_1n():
     phi_derivative_manual = -np.sin(X * omega + u) * omega[:, d] * np.sqrt(2.)
     assert_close(phi_derivative, phi_derivative_manual)
 
-def test_feature_map_derivative_d_2n():
+def test_rff_feature_map_derivative_d_2n():
     X = np.array([[1.], [3.]])
     u = np.array([2.])
     omega = np.array([[2.]])
@@ -128,7 +136,7 @@ def test_feature_map_derivative_d_2n():
     phi_derivative_manual = -np.sin(X * omega + u) * omega[:, d] * np.sqrt(2.)
     assert_close(phi_derivative, phi_derivative_manual)
 
-def test_feature_map_derivative2_d():
+def test_rff_feature_map_derivative2_d():
     X = np.array([[1.]])
     u = np.array([2.])
     omega = np.array([[2.]])
@@ -137,7 +145,7 @@ def test_feature_map_derivative2_d():
     phi_derivative2_manual = -rff_feature_map(X, omega, u) * (omega[:, d] ** 2)
     assert_close(phi_derivative2, phi_derivative2_manual)
 
-def test_feature_map_derivatives_loop_equals_map_derivative_d():
+def test_rff_feature_map_derivatives_loop_equals_map_derivative_d():
     N = 10
     D = 20
     m = 3
@@ -151,7 +159,7 @@ def test_feature_map_derivatives_loop_equals_map_derivative_d():
         derivative = rff_feature_map_grad_d(X, omega, u, d)
         assert_allclose(derivatives[d], derivative)
 
-def test_feature_map_derivatives_equals_feature_map_derivatives_loop():
+def test_rff_feature_map_derivatives_equals_feature_map_derivatives_loop():
     N = 10
     D = 20
     m = 3
@@ -164,7 +172,7 @@ def test_feature_map_derivatives_equals_feature_map_derivatives_loop():
     
     assert_allclose(derivatives_loop, derivatives)
 
-def test_feature_map_derivatives2_loop_equals_map_derivative2_d():
+def test_rff_feature_map_derivatives2_loop_equals_map_derivative2_d():
     N = 10
     D = 20
     m = 3
@@ -178,7 +186,7 @@ def test_feature_map_derivatives2_loop_equals_map_derivative2_d():
         derivative = rff_feature_map_grad2_d(X, omega, u, d)
         assert_allclose(derivatives[d], derivative)
 
-def test_feature_map_derivatives2_equals_feature_map_derivatives2_loop():
+def test_rff_feature_map_derivatives2_equals_feature_map_derivatives2_loop():
     N = 10
     D = 20
     m = 3
@@ -191,7 +199,7 @@ def test_feature_map_derivatives2_equals_feature_map_derivatives2_loop():
     
     assert_allclose(derivatives_loop, derivatives)
 
-def test_feature_map_grad_single_equals_feature_map_derivative_d():
+def test_rff_feature_map_grad_single_equals_feature_map_derivative_d():
     D = 2
     m = 3
     omega = np.random.randn(D, m)
@@ -205,3 +213,88 @@ def test_feature_map_grad_single_equals_feature_map_derivative_d():
         grad_manual[d, :] = rff_feature_map_grad_d(x, omega, u, d)
     
     assert_allclose(grad_manual, grad)
+
+def test_rff_feature_map_comp_theano_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    
+    D = 2
+    x = np.random.randn(D)
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    for i in range(m):
+        rff_feature_map_comp_theano(x, omega[:, i], u[i])
+
+def test_rff_feature_map_comp_theano_result_equals_manual():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    
+    D = 2
+    x = np.random.randn(D)
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    phi_manual = rff_feature_map_single(x, omega, u)
+    for i in range(m):
+        # phi_manual is a monte carlo average, so have to normalise by np.sqrt(m) here
+        phi = rff_feature_map_comp_theano(x, omega[:, i], u[i]) / np.sqrt(m)
+        assert_close(phi, phi_manual[i])
+
+def test_rff_feature_map_comp_grad_theano_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+       
+    D = 2
+    x = np.random.randn(D)
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    for i in range(m):
+        rff_feature_map_comp_grad_theano(x, omega[:, i], u[i])
+ 
+def test_rff_feature_map_grad_theano_result_equals_manual():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+      
+    D = 2
+    x = np.random.randn(D)
+    X = x[np.newaxis, :]
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    grad_manual = rff_feature_map_grad(X, omega, u)[:, 0, :]
+    
+    for i in range(m):
+        # phi_manual is a monte carlo average, so have to normalise by np.sqrt(m) here
+        grad = rff_feature_map_comp_grad_theano(x, omega[:, i], u[i]) / np.sqrt(m)
+        assert_close(grad, grad_manual[:, i])
+        
+def test_rff_feature_map_hessian_theano_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+       
+    D = 2
+    x = np.random.randn(D)
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    for i in range(m):
+        rff_feature_map_comp_hessian_theano(x, omega[:, i], u[i])
+ 
+def test_rff_feature_map_third_order_tensor_theano_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+       
+    D = 2
+    x = np.random.randn(D)
+    m = 10
+    sigma = 1.
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    for i in range(m):
+        rff_feature_map_comp_third_order_tensor_theano(x, omega[:, i], u[i])
