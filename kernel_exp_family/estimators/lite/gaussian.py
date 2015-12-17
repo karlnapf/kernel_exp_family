@@ -3,13 +3,16 @@ from abc import abstractmethod
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
-    gaussian_kernel_grad, theano_available, gaussian_kernel_hessian_theano, \
-    gaussian_kernel_third_order_derivative_tensor_theano
+    gaussian_kernel_grad, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.tools.log import Log
 import numpy as np
 
 
+if theano_available:
+    from kernel_exp_family.kernels.kernels import gaussian_kernel_hessian_theano, \
+        gaussian_kernel_third_order_derivative_tensor_theano
+                
 logger = Log.get_logger()
 
 def compute_b(X, Y, K_XY, sigma):
