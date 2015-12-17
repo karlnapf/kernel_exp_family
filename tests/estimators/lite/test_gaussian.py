@@ -289,7 +289,7 @@ def test_hessian_execute():
     est.fit(X)
     est.hessian(X[0])
 
-def test_gaussian_kernel_third_order_derivative_tensor_execute():
+def test_third_order_derivative_tensor_execute():
     if not theano_available:
         raise SkipTest("Theano not available.")
     sigma = 1.

@@ -204,7 +204,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
             # RFF is a monte carlo average, so have to normalise by np.sqrt(m) here
             return H / np.sqrt(self.m)
         
-        def gaussian_kernel_third_order_derivative_tensor(self, x):
+        def third_order_derivative_tensor(self, x):
             """
             Computes the third order derivative tensor of the learned log-density function.
             
