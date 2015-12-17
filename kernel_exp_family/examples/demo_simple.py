@@ -31,7 +31,13 @@ class ground_truth():
     def log_pdf(self, x):
         return -0.5 * np.dot(x, x)
     def grad(self, x):
-        return np.linalg.norm(x)
+        return -0.5 * x
+    def fit(self, X):
+        pass
+    def log_pdf_multiple(self, X):
+        return np.array([self.log_pdf(x) for x in X])
+    def objective(self, x):
+        return 0.
 
 if __name__ == '__main__':
     """
@@ -51,7 +57,8 @@ if __name__ == '__main__':
     estimators = [
                   get_KernelExpFiniteGaussian_instance(D),
                   get_KernelExpLiteGaussian_instance(D, N),
-                  get_KernelExpLiteGaussianLowRank_instance(D, N)
+                  get_KernelExpLiteGaussianLowRank_instance(D, N),
+                  ground_truth()
                   ]
     
     for est in estimators:
@@ -68,7 +75,4 @@ if __name__ == '__main__':
         visualise_fit(est, X)
         plt.suptitle("Estimated with %s" % str(est.__class__.__name__))
     
-    
-    visualise_fit(ground_truth(), X)
-    plt.suptitle("Ground truth")
     plt.show()
