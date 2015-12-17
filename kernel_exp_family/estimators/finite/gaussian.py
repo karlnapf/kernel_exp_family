@@ -1,15 +1,17 @@
 from choldate._choldate import cholupdate
 
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_single,\
-    rff_sample_basis, rff_feature_map_grad_single, theano_available,\
-    rff_feature_map_comp_hessian_theano,\
-    rff_feature_map_comp_third_order_tensor_theano
+from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_single, \
+    rff_sample_basis, rff_feature_map_grad_single, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 import scipy as sp
 
 
+if theano_available:
+    from kernel_exp_family.kernels.kernels import rff_feature_map_comp_hessian_theano, \
+    rff_feature_map_comp_third_order_tensor_theano
+    
 def compute_b(X, omega, u):
     assert len(X.shape) == 2
     m = 1 if np.isscalar(u) else len(u)
@@ -199,7 +201,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
             
             H = np.zeros((self.D, self.D))
             for i, theta_i in enumerate(self.theta):
-                H += theta_i * rff_feature_map_comp_hessian_theano(x, self.omega[:,i], self.u[i])
+                H += theta_i * rff_feature_map_comp_hessian_theano(x, self.omega[:, i], self.u[i])
         
             # RFF is a monte carlo average, so have to normalise by np.sqrt(m) here
             return H / np.sqrt(self.m)
@@ -214,10 +216,10 @@ class KernelExpFiniteGaussian(EstimatorBase):
             
             G3 = np.zeros((self.D, self.D, self.D))
             for i, theta_i in enumerate(self.theta):
-                G3 += theta_i * rff_feature_map_comp_third_order_tensor_theano(x, self.omega[:,i], self.u[i])
+                G3 += theta_i * rff_feature_map_comp_third_order_tensor_theano(x, self.omega[:, i], self.u[i])
         
             # RFF is a monte carlo average, so have to normalise by np.sqrt(m) here
-            return G3  / np.sqrt(self.m)
+            return G3 / np.sqrt(self.m)
     
     def log_pdf_multiple(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
