@@ -1,10 +1,12 @@
+from nose import SkipTest
 from nose.tools import assert_almost_equal, assert_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
 import kernel_exp_family.estimators.lite.develop.gaussian as develop_gaussian
+from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 import kernel_exp_family.estimators.lite.gaussian as gaussian
-from kernel_exp_family.kernels.kernels import gaussian_kernel
+from kernel_exp_family.kernels.kernels import gaussian_kernel, theano_available
 import numpy as np
 
 
@@ -273,3 +275,29 @@ def test_objective_sym_same_as_from_estimation():
     
     J2 = develop_gaussian.objective_sym(Z, sigma, lmbda, a, K)
     assert_almost_equal(J, J2)
+
+def test_hessian_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    sigma = 1.
+    lmbda = 1.
+    N = 100
+    D = 2
+    X = np.random.randn(N, D)
+    
+    est = KernelExpLiteGaussian(sigma, lmbda, D, N)
+    est.fit(X)
+    est.hessian(X[0])
+
+def test_gaussian_kernel_third_order_derivative_tensor_execute():
+    if not theano_available:
+        raise SkipTest("Theano not available.")
+    sigma = 1.
+    lmbda = 1.
+    N = 100
+    D = 2
+    X = np.random.randn(N, D)
+    
+    est = KernelExpLiteGaussian(sigma, lmbda, D, N)
+    est.fit(X)
+    est.gaussian_kernel_third_order_derivative_tensor(X[0])

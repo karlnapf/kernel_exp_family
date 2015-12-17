@@ -3,7 +3,8 @@ from abc import abstractmethod
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
-    gaussian_kernel_grad
+    gaussian_kernel_grad, theano_available, gaussian_kernel_hessian_theano, \
+    gaussian_kernel_third_order_derivative_tensor_theano
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.tools.log import Log
 import numpy as np
@@ -145,6 +146,35 @@ class KernelExpLiteGaussian(EstimatorBase):
         k = gaussian_kernel_grad(x, self.X, self.sigma)
         return np.dot(self.alpha, k)
     
+    if theano_available:
+        def hessian(self, x):
+            """
+            Computes the Hessian of the learned log-density function.
+            
+            WARNING: This implementation slow, so don't call repeatedly.
+            """
+            assert_array_shape(x, ndim=1, dims={0: self.D})
+            
+            H = np.zeros((self.D, self.D))
+            for i, a in enumerate(self.alpha):
+                H += a * gaussian_kernel_hessian_theano(x, self.X[i], self.sigma)
+        
+            return H
+        
+        def gaussian_kernel_third_order_derivative_tensor(self, x):
+            """
+            Computes the third order derivative tensor of the learned log-density function.
+            
+            WARNING: This implementation is slow, so don't call repeatedly.
+            """
+            assert_array_shape(x, ndim=1, dims={0: self.D})
+            
+            G3 = np.zeros((self.D, self.D, self.D))
+            for i, a in enumerate(self.alpha):
+                G3 += a * gaussian_kernel_third_order_derivative_tensor_theano(x, self.X[i], self.sigma)
+        
+            return G3
+    
     def log_pdf_multiple(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
@@ -163,7 +193,7 @@ class KernelExpLiteGaussianAdaptive(KernelExpLiteGaussian):
     def __init__(self, sigma, lmbda, D, N,
                  n_initial=3, n_iter=3, minimum_size_learning=100,
                  n_initial_relearn=1, n_iter_relearn=1,
-                 param_bounds={'sigma': [-3,3]}):
+                 param_bounds={'sigma': [-3, 3]}):
         KernelExpLiteGaussian.__init__(self, sigma, lmbda, D, N)
         
         self.bo = None
@@ -179,7 +209,7 @@ class KernelExpLiteGaussianAdaptive(KernelExpLiteGaussian):
         
     def fit(self, X):
         # avoid infinite recursion from x-validation fit call
-        if not self.learning_parameters and len(X)>=self.minimum_size_learning:
+        if not self.learning_parameters and len(X) >= self.minimum_size_learning:
             self.learning_parameters = True
             if self.bo is None:
                 logger.info("Bayesian optimisation from scratch.")
