@@ -5,7 +5,7 @@
 
 Various estimators of the [infinite dimensional exponential family model](http://arxiv.org/abs/1312.3516). In particular, effecient approximations from our NIPS 2015 paper on [Gradient-free Hamiltonain Monte Carlo with Effecient Kernel Exponential Families](http://arxiv.org/abs/1506.02564). Used in the accompanying [kernel HMC package](https://github.com/karlnapf/kernel_hmc).
 
-For learning parameters, there is the option to use the Bayesian optimisation package [pybo](https://github.com/mwhoffman/pybo).
+For learning parameters, there is the option to use the Bayesian optimisation package [pybo](https://github.com/mwhoffman/pybo). If [theano](https://github.com/Theano/Theano) is installed, higher order derivatives of the model's log-density are available.
 
 Install dependencies:
 
