@@ -300,4 +300,4 @@ def test_third_order_derivative_tensor_execute():
     
     est = KernelExpLiteGaussian(sigma, lmbda, D, N)
     est.fit(X)
-    est.gaussian_kernel_third_order_derivative_tensor(X[0])
+    est.third_order_derivative_tensor(X[0])
