@@ -25,17 +25,21 @@ def pdf_grid(Xs, Ys, est):
     
     return D, G
 
-def visualise_fit(est, X):
+def visualise_fit(est, X, Xs=None, Ys=None):
     # visualise found fit
     plt.figure()
-    Xs = np.linspace(-5, 5)
-    Ys = np.linspace(-5, 5)
-    D, G = pdf_grid(Xs, Ys, est)
+    if Xs is None:
+        Xs = np.linspace(-5, 5)
     
+    if Ys is None:
+        Ys = np.linspace(-5, 5)
+    
+    D, G = pdf_grid(Xs, Ys, est)
+     
     plt.subplot(121)
     visualise_array(Xs, Ys, D, X)
     plt.title("log pdf")
-    
+     
     plt.subplot(122)
     visualise_array(Xs, Ys, G, X)
     plt.title("gradient norm")
