@@ -10,7 +10,7 @@ def log_sum_exp(X):
     """
     # extract minimum
     X0 = np.min(X)
-    X_without_X0 = np.delete(X, X.argmin())
+    X_without_X0 = np.delete(X, np.argmin(X))
     
     return X0 + np.log(1 + np.sum(np.exp(X_without_X0 - X0)))
 
