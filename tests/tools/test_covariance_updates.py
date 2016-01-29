@@ -1,3 +1,4 @@
+from nose import SkipTest
 from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.tools.covariance_updates import update_mean_lmbda,\
@@ -61,7 +62,11 @@ def test_update_mean_cov_L_lmbda_converges_to_weighted_mean_and_cov():
     full_mean = np.average(X, axis=0, weights=weights)
     
     # the above method uses N rather than N-1 to normalise covariance (biased)
-    full_cov = np.cov(X.T, ddof=0, aweights=weights)
+    try:
+        full_cov = np.cov(X.T, ddof=0, aweights=weights)
+    except TypeError:
+        raise SkipTest("Numpy's cov method does not support aweights keyword.")
+    
     cov = np.dot(cov_L, cov_L.T)
     
     assert_allclose(full_mean, mean)
