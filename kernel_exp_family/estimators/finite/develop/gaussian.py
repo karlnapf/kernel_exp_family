@@ -80,6 +80,22 @@ def compute_b_weighted(X, omega, u, weights):
         
     return -projections_sum / np.sum(weights)
 
+def update_b_weighted(X, b, n, omega, u, weights):
+    assert len(X.shape) == 2
+    m = 1 if np.isscalar(u) else len(u)
+    D = X.shape[1]
+    
+    X_weighted = (X.T * weights).T
+    
+    projections_sum = np.zeros(m)
+    Phi2 = rff_feature_map(X_weighted, omega, u)
+    for d in range(D):
+        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), 0)
+        
+    b_new_times_sum_weights = -projections_sum
+    sum_weights = np.sum(weights)
+    return (b * n + b_new_times_sum_weights) / (n + sum_weights)
+
 def compute_C_memory(X, omega, u):
     assert len(X.shape) == 2
     Phi2 = rff_feature_map_grad(X, omega, u)
