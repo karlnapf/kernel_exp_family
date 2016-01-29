@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     # online updates of the model
     for i in range(7):
-        X = np.random.randn(3, est.D)
+        X = np.random.randn(3 * (i + 1), est.D)
         
         # only for plotting
         all_data.append(X)
