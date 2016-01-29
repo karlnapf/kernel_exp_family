@@ -1,7 +1,9 @@
+from choldate._choldate import cholupdate
+
 from kernel_exp_family.estimators.finite.gaussian import compute_b
 from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
     rff_feature_map_grad_d, rff_feature_map_grad2, rff_feature_map_grad, \
-    rff_feature_map
+    rff_feature_map, rff_feature_map_single
 import numpy as np
 
 
@@ -46,6 +48,37 @@ def compute_b_memory(X, omega, u):
     assert len(X.shape) == 2
     Phi2 = rff_feature_map_grad2(X, omega, u)
     return -np.mean(np.sum(Phi2, 0), 0)
+
+def update_b_single(x, b, n, omega, u):
+    D = omega.shape[0]
+    m = omega.shape[1]
+    
+    projections_sum = np.zeros(m)
+    phi = rff_feature_map_single(x, omega, u)
+    for d in range(D):
+        # second derivative of feature map
+        phi2 = -phi * (omega[d, :] ** 2)
+        projections_sum -= phi2
+    
+    # Knuth's running average
+    n += 1
+    delta = projections_sum - b
+    b += delta / n
+    
+    return b
+
+def compute_b_weighted(X, omega, u, log_weights):
+    m = 1 if np.isscalar(u) else len(u)
+    D = X.shape[1]
+        
+    weights = np.exp(log_weights)
+    
+    projections_sum = np.zeros(m)
+    Phi2 = rff_feature_map(X, omega, u)
+    for d in range(D):
+        projections_sum += np.average(-Phi2 * (omega[d, :] ** 2), axis=0, weights=weights)
+        
+    return -projections_sum
 
 def compute_C_memory(X, omega, u):
     assert len(X.shape) == 2
@@ -109,27 +142,37 @@ def update_L_C_naive(x, L_C, n, omega, u):
     
     return np.linalg.cholesky(C)
 
-def compute_b_weighted(X, omega, u, log_weights=None):
-    if log_weights is None:
-        log_weights = np.log(np.ones(len(X)))
-    
-    assert len(X.shape) == 2
+def update_L_C_single(x, L_C, n, omega, u):
+    D = omega.shape[0]
+    assert x.ndim == 1
+    assert len(x) == D
     m = 1 if np.isscalar(u) else len(u)
-    D = X.shape[1]
-        
-    weights = np.exp(log_weights)
+    N = 1
     
-    projections_sum = np.zeros(m)
-    Phi2 = rff_feature_map(X, omega, u)
+    L_C *= np.sqrt(n)
+    
+    # since cholupdate works on transposed version
+    L_C = L_C.T
+    
+    projection = np.dot(x[np.newaxis, :], omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
     for d in range(D):
-        projections_sum += np.average(-Phi2 * (omega[d, :] ** 2), axis=0, weights=weights)
+        temp = -projection * omega[d, :]
         
-    return -projections_sum
+        # here temp is 1xm, this costs O(m^2)
+        cholupdate(L_C, temp[0])
+        
+    # since cholupdate works on transposed version
+    L_C = L_C.T
+    
+    # since the new C has a 1/(n+1) term in it
+    L_C /= np.sqrt(n + 1)
+    
+    return L_C
 
-def compute_C_weighted(X, omega, u, log_weights=None):
-    if log_weights is None:
-        log_weights = np.log(np.ones(len(X)))
-        
+def compute_C_weighted(X, omega, u, log_weights):
     assert len(X.shape) == 2
     m = 1 if np.isscalar(u) else len(u)
     N = X.shape[0]

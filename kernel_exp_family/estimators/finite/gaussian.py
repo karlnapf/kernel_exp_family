@@ -4,6 +4,7 @@ from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_single, \
     rff_sample_basis, rff_feature_map_grad_single, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
+from kernel_exp_family.tools.numerics import log_sum_exp
 import numpy as np
 import scipy as sp
 
@@ -41,52 +42,47 @@ def compute_C(X, omega, u):
 
     return C / N
 
-def update_b(x, b, n, omega, u):
-    D = omega.shape[0]
-    m = omega.shape[1]
+def update_b(X, b, n, omega, u):
+    assert len(X.shape) == 2
+    m = 1 if np.isscalar(u) else len(u)
+    D = X.shape[1]
     
     projections_sum = np.zeros(m)
-    phi = rff_feature_map_single(x, omega, u)
+    Phi2 = rff_feature_map(X, omega, u)
     for d in range(D):
-        # second derivative of feature map
-        phi2 = -phi * (omega[d, :] ** 2)
-        projections_sum -= phi2
-    
-    # Knuth's running average
-    n += 1
-    delta = projections_sum - b
-    b += delta / n
-    
-    return b
+        projections_sum += np.mean(-Phi2 * (omega[d, :] ** 2), 0)
+        
+    b_new = -projections_sum
+    N = len(X)
+    return (b * n + b_new * N) / (n + N)
 
-def update_L_C(x, L_C, n, omega, u):
-    D = omega.shape[0]
-    assert x.ndim == 1
-    assert len(x) == D
+def update_L_C(X, L_C, n, omega, u):
+    assert len(X.shape) == 2
     m = 1 if np.isscalar(u) else len(u)
-    N = 1
+    N = X.shape[0]
+    D = X.shape[1]
     
+    # unscale
     L_C *= np.sqrt(n)
     
     # since cholupdate works on transposed version
     L_C = L_C.T
     
-    projection = np.dot(x[np.newaxis, :], omega) + u
+    projection = np.dot(X, omega) + u
     np.sin(projection, projection)
     projection *= -np.sqrt(2. / m)
     temp = np.zeros((N, m))
     for d in range(D):
         temp = -projection * omega[d, :]
-        
-        # here temp is 1xm, this costs O(m^2)
-        cholupdate(L_C, temp[0])
-        
+        for u in temp:
+            cholupdate(L_C, u)
+
     # since cholupdate works on transposed version
     L_C = L_C.T
     
-    # since the new C has a 1/(n+1) term in it
-    L_C /= np.sqrt(n + 1)
-    
+    # since the new C has a 1/(n+len(X)) term in it
+    L_C /= np.sqrt(n + len(X))
+
     return L_C
 
 def fit(X, omega, u, b=None, C=None):
@@ -161,14 +157,19 @@ class KernelExpFiniteGaussian(EstimatorBase):
         
         return b_fake, L_C_fake, n_fake
     
-    def fit(self, X):
+    def fit(self, X, log_weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         N = len(X)
+        
+        if log_weights is None:
+            log_weights = np.log(np.ones(N))
+        assert_array_shape(log_weights, ndim=1, dims={0: N})
         
         # initialise solution
         b_fake, L_C_fake, n_fake = self._gen_initial_solution()
         
         # "update" initial "fake" solution in the way the it is the same as repeated updating
+        sum_weights = np.exp(log_sum_exp(log_weights))
         self.b = (b_fake * n_fake + compute_b(X, self.omega, self.u) * N) / (n_fake + N)
         C = (np.dot(L_C_fake, L_C_fake.T) * n_fake + compute_C(X, self.omega, self.u) * N) / (n_fake + N)
         self.L_C = np.linalg.cholesky(C)
@@ -177,17 +178,20 @@ class KernelExpFiniteGaussian(EstimatorBase):
         
         self.theta = fit_L_C_precomputed(self.b, self.L_C)
     
-    def update_fit(self, X):
+    def update_fit(self, X, log_weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
+        N = len(X)
         
-        for x in X:
-            self.b = update_b(x, self.b, self.n_with_fake, self.omega, self.u)
-            self.L_C = update_L_C(x, self.L_C, self.n_with_fake, self.omega, self.u)
-            self.n_with_fake += 1
-            self.n += 1
+        if log_weights is None:
+            log_weights = np.log(np.ones(N))
+        assert_array_shape(log_weights, ndim=1, dims={0: N})
+        
+        self.b = update_b(X, self.b, self.n_with_fake, self.omega, self.u)
+        self.L_C = update_L_C(X, self.L_C, self.n_with_fake, self.omega, self.u)
+        self.n += len(X)
         
         self.theta = fit_L_C_precomputed(self.b, self.L_C)
-        
+    
     def log_pdf(self, x):
         if self.theta is None:
             raise RuntimeError("Model not fitted yet.")

@@ -5,10 +5,11 @@ from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory, \
     compute_C_memory, _objective_sym_completely_manual, \
-    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted
+    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted,\
+    update_b_single, update_L_C_single
 from kernel_exp_family.estimators.finite.gaussian import fit, objective, \
-    compute_b, compute_C, update_b, update_C, update_L_C, \
-    KernelExpFiniteGaussian
+    compute_b, compute_C, update_C, \
+    KernelExpFiniteGaussian, update_b, update_L_C
 from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
     rff_feature_map_grad_d, theano_available, rff_sample_basis
 import numpy as np
@@ -265,18 +266,6 @@ def test_compute_b_equals_compute_b_weighted_non_constant_weights():
     b_weighted = compute_b_weighted(X, omega, u, log_weights)
     assert_allclose(b_manual, b_weighted)
 
-def test_compute_b_equals_compute_b_weighted_no_weights():
-    N = 100
-    D = 3
-    m = 10
-    omega = np.random.randn(D, m)
-    u = np.random.uniform(0, 2 * np.pi, m)
-    X = np.random.randn(N, D)
-    
-    b = compute_b(X, omega, u)
-    b_weighted = compute_b_weighted(X, omega, u, log_weights=None)
-    assert_allclose(b, b_weighted)
-
 def test_compute_C_equals_compute_C_weighted_constant_weights():
     N = 100
     D = 3
@@ -306,18 +295,6 @@ def test_compute_C_equals_compute_C_weighted_non_constant_weights():
     C_weighted = compute_C_weighted(X, omega, u, log_weights)
     assert_allclose(C_manual, C_weighted)
 
-def test_compute_C_equals_compute_C_weighted_no_weights():
-    N = 100
-    D = 3
-    m = 10
-    omega = np.random.randn(D, m)
-    u = np.random.uniform(0, 2 * np.pi, m)
-    X = np.random.randn(N, D)
-    
-    C = compute_C(X, omega, u)
-    C_weighted = compute_C_weighted(X, omega, u, log_weights=None)
-    assert_allclose(C, C_weighted)
-
 def test_compute_C_equals_compute_C_memory():
     N = 100
     D = 3
@@ -330,7 +307,7 @@ def test_compute_C_equals_compute_C_memory():
     C_storage = compute_C_memory(X, omega, u)
     assert_allclose(C, C_storage, rtol=1e-4)
 
-def test_update_b_equals_batch():
+def test_update_b_single_equals_batch():
     N = 100
     D = 3
     m = 10
@@ -340,10 +317,31 @@ def test_update_b_equals_batch():
     x = np.random.randn(D)
     
     b = compute_b(X, omega, u)
-    b = update_b(x, b, n=N, omega=omega, u=u)
+    b = update_b_single(x, b, n=N, omega=omega, u=u)
     b_batch = compute_b(np.vstack((X, x)), omega, u)
     
     assert_allclose(b, b_batch)
+
+def test_update_b_equals_update_b_single():
+    N = 200
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    X2 = np.random.randn(N, D)
+    
+    b = compute_b(X, omega, u)
+    b_single = b
+    i = N
+    for x in X2:
+        b_single = update_b_single(x, b_single, n=i, omega=omega, u=u)
+        i += 1
+    
+    b = compute_b(X, omega, u)
+    b_multiple = update_b(X2, b, n=N, omega=omega, u=u)
+    
+    assert_allclose(b_single, b_multiple)
 
 def test_update_C_equals_batch():
     N = 100
@@ -359,7 +357,28 @@ def test_update_C_equals_batch():
     C_batch = compute_C(np.vstack((X, x)), omega, u)
     
     assert_allclose(C, C_batch)
+
+def test_update_C_equals_update_C_single():
+    N = 200
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    X2 = np.random.randn(N, D)
     
+    L_C = np.linalg.cholesky(compute_C(X, omega, u))
+    L_C_single = L_C
+    i = N
+    for x in X2:
+        L_C_single = update_L_C_single(x, L_C_single, n=i, omega=omega, u=u)
+        i += 1
+    
+    L_C = np.linalg.cholesky(compute_C(X, omega, u))
+    L_C_multiple = update_L_C(X2, L_C, n=N, omega=omega, u=u)
+    
+    assert_allclose(L_C_single, L_C_multiple)
+
 def test_update_L_C_naive_equals_batch():
     N = 100
     D = 3
@@ -370,7 +389,7 @@ def test_update_L_C_naive_equals_batch():
     x = np.random.randn(D)
     
     L_C = np.linalg.cholesky(compute_C(X, omega, u))
-    L_C = update_L_C(x, L_C, n=N, omega=omega, u=u)
+    L_C = update_L_C_single(x, L_C, n=N, omega=omega, u=u)
     L_C_batch = np.linalg.cholesky(compute_C(np.vstack((X, x)), omega, u))
 
     assert_allclose(L_C, L_C_batch)
@@ -385,7 +404,7 @@ def test_update_L_C_equals_batch():
     x = np.random.randn(D)
     
     L_C = np.linalg.cholesky(compute_C(X, omega, u))
-    L_C = update_L_C(x, L_C, N, omega, u)
+    L_C = update_L_C_single(x, L_C, N, omega, u)
     L_C_batch = np.linalg.cholesky(compute_C(np.vstack((X, x)), omega, u))
 
     assert_allclose(L_C, L_C_batch)
@@ -418,7 +437,7 @@ def test_third_order_derivative_tensor_execute():
     est.fit(X)
     est.third_order_derivative_tensor(X[0])
 
-def test_update_b_equals_compute_b_when_initialised_correctly():
+def test_update_b_single_equals_compute_b_when_initialised_correctly():
     sigma = 1.
     N = 20
     D = 2
@@ -432,7 +451,7 @@ def test_update_b_equals_compute_b_when_initialised_correctly():
     b_update = np.zeros(m)
     n_update = m
     for x in X:
-        b_update = update_b(x, b_update, n_update, omega, u)
+        b_update = update_b_single(x, b_update, n_update, omega, u)
         n_update += 1
     
     # initial fit and batch (average of "fake" b and new observations
@@ -457,7 +476,7 @@ def test_update_L_C_equals_compute_L_C_when_initialised_correctly():
     L_C_update = np.eye(m) * np.sqrt(lmbda)
     n_update = m
     for x in X:
-        L_C_update = update_L_C(x, L_C_update, n_update, omega, u)
+        L_C_update = update_L_C_single(x, L_C_update, n_update, omega, u)
         n_update += 1
     
     # initial fit and batch (average of "fake" b and new observations
