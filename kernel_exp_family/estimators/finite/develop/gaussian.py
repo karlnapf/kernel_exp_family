@@ -1,8 +1,11 @@
-from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d,\
-    rff_feature_map_grad_d, rff_feature_map_grad2, rff_feature_map_grad
+from kernel_exp_family.estimators.finite.gaussian import compute_b
+from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
+    rff_feature_map_grad_d, rff_feature_map_grad2, rff_feature_map_grad, \
+    rff_feature_map
 import numpy as np
 
-def _objective_sym_completely_manual(X, theta, lmbda, omega, u):
+
+def _objective_sym_completely_manual(X, theta, omega, u):
     N = X.shape[0]
     D = X.shape[1]
     m = len(theta)
@@ -19,10 +22,9 @@ def _objective_sym_completely_manual(X, theta, lmbda, omega, u):
             J_manual += 0.5 * np.dot(theta, np.dot(C_term_manual, theta))
     
     J_manual /= N
-    J_manual += 0.5 * lmbda * np.dot(theta, theta)
     return J_manual
 
-def _objective_sym_half_manual(X, theta, lmbda, omega, u):
+def _objective_sym_half_manual(X, theta, omega, u):
     N = X.shape[0]
     D = X.shape[1]
     
@@ -38,7 +40,6 @@ def _objective_sym_half_manual(X, theta, lmbda, omega, u):
             J_manual += 0.5 * np.dot(theta, np.dot(C_term_manual, theta))
     
     J_manual /= N
-    J_manual += 0.5 * lmbda * np.dot(theta, theta)
     return J_manual
 
 def compute_b_memory(X, omega, u):
@@ -53,7 +54,7 @@ def compute_C_memory(X, omega, u):
     N = X.shape[0]
     m = Phi2.shape[2]
     
-#     ## bottleneck! use np.einsum
+#     # bottleneck! loop version is very slow
 #     C = np.zeros((m, m))
 #     t = time.time()
 #     for i in range(N):
@@ -62,19 +63,21 @@ def compute_C_memory(X, omega, u):
 #             C += np.outer(phi2, phi2)
 #     print("loop", time.time()-t)
 #      
-#     #roughly 5x faster than the above loop
+#     # roughly 5x faster than the above loop
 #     t = time.time()
 #     Phi2_reshaped = Phi2.reshape(N*d, m)
 #     C2=np.einsum('ij,ik->jk', Phi2_reshaped, Phi2_reshaped)
 #     print("einsum", time.time()-t)
 #
-#     #cython implementation, is slowest
+#     # cython implementation, is slowest
 #     t = time.time()
 #     Phi2_reshaped = Phi2.reshape(N*d, m)
 #     C3 = outer_sum_cython(Phi2_reshaped)
 #     print("cython", time.time()-t)
     
 #     t = time.time()
+
+    # fastest version using multicore: tensordot method
     Phi2_reshaped = Phi2.reshape(N * d, m)
     C4 = np.tensordot(Phi2_reshaped, Phi2_reshaped, [0, 0])
 #     print("tensordot", time.time()-t)
@@ -106,3 +109,42 @@ def update_L_C_naive(x, L_C, n, omega, u):
     
     return np.linalg.cholesky(C)
 
+def compute_b_weighted(X, omega, u, log_weights=None):
+    if log_weights is None:
+        log_weights = np.log(np.ones(len(X)))
+    
+    assert len(X.shape) == 2
+    m = 1 if np.isscalar(u) else len(u)
+    D = X.shape[1]
+        
+    weights = np.exp(log_weights)
+    
+    projections_sum = np.zeros(m)
+    Phi2 = rff_feature_map(X, omega, u)
+    for d in range(D):
+        projections_sum += np.average(-Phi2 * (omega[d, :] ** 2), axis=0, weights=weights)
+        
+    return -projections_sum
+
+def compute_C_weighted(X, omega, u, log_weights=None):
+    if log_weights is None:
+        log_weights = np.log(np.ones(len(X)))
+        
+    assert len(X.shape) == 2
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    weights = np.exp(log_weights)
+    X_weighted = (X.T * weights).T
+    
+    C = np.zeros((m, m))
+    projection = np.dot(X_weighted, omega) + u
+    np.sin(projection, projection)
+    projection *= -np.sqrt(2. / m)
+    temp = np.zeros((N, m))
+    for d in range(D):
+        temp = -projection * omega[d, :]
+        C += np.tensordot(temp, temp, [0, 0])
+
+    return C / np.sum(weights)
