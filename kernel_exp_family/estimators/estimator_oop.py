@@ -14,6 +14,12 @@ class EstimatorBase(object):
     def fit(self, X):
         raise NotImplementedError()
     
+    def supports_update_fit(self):
+        return False
+    
+    def supports_weights(self):
+        return False
+    
     def log_pdf_multiple(self, X):
         raise NotImplementedError()
     

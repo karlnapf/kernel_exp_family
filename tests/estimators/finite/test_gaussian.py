@@ -3,13 +3,13 @@ from nose.tools import assert_less_equal, assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory, \
-    compute_C_memory, _objective_sym_completely_manual, \
-    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted, \
-    update_b_single, update_L_C_single, update_b_weighted
+from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory,\
+    compute_C_memory, _objective_sym_completely_manual,\
+    _objective_sym_half_manual, update_b_single, update_L_C_single
 from kernel_exp_family.estimators.finite.gaussian import fit, objective, \
     compute_b, compute_C, update_C, \
-    KernelExpFiniteGaussian, update_b, update_L_C
+    KernelExpFiniteGaussian, update_b, update_L_C, compute_b_weighted,\
+    compute_C_weighted, update_b_weighted, update_L_C_weighted
 from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
     rff_feature_map_grad_d, theano_available, rff_sample_basis
 import numpy as np
@@ -400,6 +400,46 @@ def test_update_b_weights_equals_compute_b_non_constant_weights():
     
     assert_allclose(b, b_updated)
 
+def test_update_L_C_weights_equals_compute_L_C_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X1 = np.random.randn(N, D)
+    X2 = np.random.randn(N, D)
+    weights1 = np.ones(N)
+    weights2 = np.ones(N)
+    
+    C = compute_C_weighted(np.vstack((X1, X2)), omega, u, np.hstack((weights1, weights2)))
+    L_C = np.linalg.cholesky(C)
+
+    C_updated = compute_C_weighted(X1, omega, u, weights1)
+    L_C_updated = np.linalg.cholesky(C_updated)
+    L_C_updated = update_L_C_weighted(X2, L_C_updated, np.sum(weights1), omega, u, weights2)
+    
+    assert_allclose(L_C, L_C_updated)
+
+def test_update_C_weights_equals_compute_C_non_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X1 = np.random.randn(N, D)
+    X2 = np.random.randn(N, D)
+    weights1 = np.random.rand(N)
+    weights2 = np.random.rand(N)
+    
+    C = compute_C_weighted(np.vstack((X1, X2)), omega, u, np.hstack((weights1, weights2)))
+    L_C = np.linalg.cholesky(C)
+
+    C_updated = compute_C_weighted(X1, omega, u, weights1)
+    L_C_updated = np.linalg.cholesky(C_updated)
+    L_C_updated = update_L_C_weighted(X2, L_C_updated, np.sum(weights1), omega, u, weights2)
+    
+    assert_allclose(L_C, L_C_updated)
+    
 def test_update_C_equals_update_C_single():
     N = 200
     D = 3

@@ -442,55 +442,58 @@ def test_set_parameters_from_dict_wrong_input_parameters():
         param_dict['strange_parameter'] = 0
         assert_raises(ValueError, estimator.set_parameters_from_dict, param_dict)
 
-def test_update_fit_if_exists_execute():
+def test_update_fit_execute():
     N = 100
     estimators = get_estimator_instances(N)
     
     for est in estimators:
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             X = np.random.randn(N, est.D)
             X2 = np.random.randn(N, est.D)
             est.fit(X)
         
             est.update_fit(X2)
 
-def test_update_fit_if_exists_increasing_n():
+def test_update_fit_increasing_n():
     N = 100
     estimators = get_estimator_instances(N)
     
     for est in estimators:
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             X = np.random.randn(N, est.D)
             X2 = np.random.randn(N, est.D)
             est.fit(X)
             old_n = est.n
+            
             est.update_fit(X2)
             
             assert est.n == old_n + N
 
-def test_update_fit_if_exists_equals_batch():
+def test_update_fit_equals_batch():
     N = 100
     estimators = get_estimator_instances(N)
     
     for est in estimators:
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             x_test = np.random.randn(est.D)
             X = np.random.randn(N, est.D)
             X2 = np.random.randn(N, est.D)
             stacked = np.vstack((X, X2))
+            
             est.fit(stacked)
             log_pdf_batch = est.log_pdf(x_test)
             grad_batch = est.grad(x_test)
             
             est.fit(X)
             est.update_fit(X2)
+            
             log_pdf_online = est.log_pdf(x_test)
             grad_online = est.grad(x_test)
             
             assert_allclose(log_pdf_online, log_pdf_batch, err_msg=est.get_name())
-            assert_allclose(grad_online, grad_batch, err_msg=est.__class__.__name__)
+            assert_allclose(grad_online, grad_batch, err_msg=est.get_name())
 
-def test_update_fit_if_exists_wrong_input_type():
+def test_update_fit_wrong_input_type():
     N = 100
     estimators = get_estimator_instances(N)
     
@@ -498,12 +501,12 @@ def test_update_fit_if_exists_wrong_input_type():
         X = np.random.randn(N, est.D)
         est.fit(X)
         
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             assert_raises(TypeError, est.update_fit, None)
             assert_raises(TypeError, est.update_fit, 1)
             assert_raises(TypeError, est.update_fit, [1, 2, 3])
             
-def test_update_fit_if_exists_wrong_input_shape():
+def test_update_fit_wrong_input_shape():
     N = 100
     estimators = get_estimator_instances(N)
     
@@ -511,11 +514,11 @@ def test_update_fit_if_exists_wrong_input_shape():
         X = np.random.randn(N, est.D)
         est.fit(X)
         
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             assert_raises(ValueError, est.update_fit, np.random.randn(N))
             assert_raises(ValueError, est.update_fit, np.random.randn(N, est.D - 1, 1))
             
-def test_update_fit_if_exists_wrong_input_dims():
+def test_update_fit_wrong_input_dims():
     N = 100
     estimators = get_estimator_instances(N)
     
@@ -523,6 +526,73 @@ def test_update_fit_if_exists_wrong_input_dims():
         X = np.random.randn(N, est.D)
         est.fit(X)
         
-        if hasattr(est, 'update_fit'):
+        if est.supports_update_fit():
             assert_raises(ValueError, est.update_fit, np.random.randn(N, est.D + 1))
             assert_raises(ValueError, est.update_fit, np.random.randn(N, est.D - 1))
+
+def test_fit_with_weights_execute():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            est.fit(X, np.ones((N)))
+
+def test_fit_with_weights_negative_weights():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            assert_raises(ValueError, est.fit, X, -np.ones(N))
+
+def test_fit_with_weights_wrong_input_shape():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            assert_raises(ValueError, est.fit, X, np.ones((N, 1)))
+
+def test_fit_with_weights_wrong_input_dim():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            assert_raises(ValueError, est.fit, X, np.ones(N + 1))
+            assert_raises(ValueError, est.fit, X, np.ones(N - 1))
+
+def test_fit_with_weights_wrong_input_type():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            assert_raises(TypeError, est.fit, X, "None")
+            assert_raises(TypeError, est.fit, X, 0.)
+
+def test_fit_with_weights_constant_weights_equals_no_weights():
+    N = 100
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            x_test = np.random.randn(est.D)
+            est.fit(X)
+            log_pdf = est.log_pdf(x_test)
+            grad = est.grad(x_test)
+            
+            weights = np.ones(N)
+            est.fit(X, weights)
+            log_pdf_weighted = est.log_pdf(x_test)
+            grad_weighted = est.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
