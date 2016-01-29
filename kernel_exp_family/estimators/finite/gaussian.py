@@ -21,7 +21,7 @@ def compute_b(X, omega, u):
     projections_sum = np.zeros(m)
     Phi2 = rff_feature_map(X, omega, u)
     for d in range(D):
-        projections_sum += np.mean(-Phi2 * (omega[d, :] ** 2), 0)
+        projections_sum += np.mean(-Phi2 * (omega[d, :] ** 2), axis=0)
         
     return -projections_sum
 
@@ -157,19 +157,19 @@ class KernelExpFiniteGaussian(EstimatorBase):
         
         return b_fake, L_C_fake, n_fake
     
-    def fit(self, X, log_weights=None):
+    def fit(self, X, weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         N = len(X)
         
-        if log_weights is None:
-            log_weights = np.log(np.ones(N))
-        assert_array_shape(log_weights, ndim=1, dims={0: N})
+        if weights is None:
+            weights = np.ones(N)
+        assert_array_shape(weights, ndim=1, dims={0: N})
         
         # initialise solution
         b_fake, L_C_fake, n_fake = self._gen_initial_solution()
         
         # "update" initial "fake" solution in the way the it is the same as repeated updating
-        sum_weights = np.exp(log_sum_exp(log_weights))
+        sum_weights = np.sum(weights)
         self.b = (b_fake * n_fake + compute_b(X, self.omega, self.u) * N) / (n_fake + N)
         C = (np.dot(L_C_fake, L_C_fake.T) * n_fake + compute_C(X, self.omega, self.u) * N) / (n_fake + N)
         self.L_C = np.linalg.cholesky(C)
@@ -178,13 +178,13 @@ class KernelExpFiniteGaussian(EstimatorBase):
         
         self.theta = fit_L_C_precomputed(self.b, self.L_C)
     
-    def update_fit(self, X, log_weights=None):
+    def update_fit(self, X, weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         N = len(X)
         
-        if log_weights is None:
-            log_weights = np.log(np.ones(N))
-        assert_array_shape(log_weights, ndim=1, dims={0: N})
+        if weights is None:
+            weights = np.ones(N)
+        assert_array_shape(weights, ndim=1, dims={0: N})
         
         self.b = update_b(X, self.b, self.n_with_fake, self.omega, self.u)
         self.L_C = update_L_C(X, self.L_C, self.n_with_fake, self.omega, self.u)

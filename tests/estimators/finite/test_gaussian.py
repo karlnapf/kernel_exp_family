@@ -5,7 +5,7 @@ from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory, \
     compute_C_memory, _objective_sym_completely_manual, \
-    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted,\
+    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted, \
     update_b_single, update_L_C_single
 from kernel_exp_family.estimators.finite.gaussian import fit, objective, \
     compute_b, compute_C, update_C, \
@@ -244,26 +244,33 @@ def test_compute_b_equals_compute_b_weighted_constant_weights():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    log_weights = np.log(np.ones(N))
+    weights = np.ones(N)
     
     b = compute_b(X, omega, u)
-    b_weighted = compute_b_weighted(X, omega, u, log_weights)
+    b_weighted = compute_b_weighted(X, omega, u, weights)
     assert_allclose(b, b_weighted)
 
 def test_compute_b_equals_compute_b_weighted_non_constant_weights():
-    N = 100
-    D = 3
+    N = 2
+    D = 2
     m = 10
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    weights = np.random.randn(N)
+    
+    # random weights that sum to N to compare to compute_b
+    weights = np.random.rand(N)
     weights = weights / np.sum(weights) * N
-    log_weights = np.log(weights)
-    X_weighted = np.array([X[i] * np.exp(log_weights[i]) for i in range(N)])
+    
+    X_weighted = (X.T * weights).T
+    
+    # attempting to show this through the compute_b interface
+    mean1 = np.mean(X_weighted, axis=0)
+    mean2 = np.average(X, axis=0, weights=weights)
+    assert_allclose(mean1, mean2)
     
     b_manual = compute_b(X_weighted, omega, u)
-    b_weighted = compute_b_weighted(X, omega, u, log_weights)
+    b_weighted = compute_b_weighted(X, omega, u, weights)
     assert_allclose(b_manual, b_weighted)
 
 def test_compute_C_equals_compute_C_weighted_constant_weights():
@@ -273,10 +280,10 @@ def test_compute_C_equals_compute_C_weighted_constant_weights():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    log_weights = np.log(np.ones(N))
+    weights = np.ones(N)
     
     C = compute_C(X, omega, u)
-    C_weighted = compute_C_weighted(X, omega, u, log_weights)
+    C_weighted = compute_C_weighted(X, omega, u, weights)
     assert_allclose(C, C_weighted)
 
 def test_compute_C_equals_compute_C_weighted_non_constant_weights():
@@ -288,11 +295,10 @@ def test_compute_C_equals_compute_C_weighted_non_constant_weights():
     X = np.random.randn(N, D)
     weights = np.random.randn(N)
     weights = weights / np.sum(weights) * N
-    log_weights = np.log(weights)
-    X_weighted = np.array([X[i] * np.exp(log_weights[i]) for i in range(N)])
+    X_weighted = (X.T * weights).T
     
     C_manual = compute_C(X_weighted, omega, u)
-    C_weighted = compute_C_weighted(X, omega, u, log_weights)
+    C_weighted = compute_C_weighted(X, omega, u, weights)
     assert_allclose(C_manual, C_weighted)
 
 def test_compute_C_equals_compute_C_memory():

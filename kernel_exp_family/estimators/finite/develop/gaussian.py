@@ -67,18 +67,18 @@ def update_b_single(x, b, n, omega, u):
     
     return b
 
-def compute_b_weighted(X, omega, u, log_weights):
+def compute_b_weighted(X, omega, u, weights):
     m = 1 if np.isscalar(u) else len(u)
     D = X.shape[1]
-        
-    weights = np.exp(log_weights)
-    
+
+    X_weighted = (X.T * weights).T
+
     projections_sum = np.zeros(m)
-    Phi2 = rff_feature_map(X, omega, u)
+    Phi2 = rff_feature_map(X_weighted, omega, u)
     for d in range(D):
-        projections_sum += np.average(-Phi2 * (omega[d, :] ** 2), axis=0, weights=weights)
+        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), axis=0)
         
-    return -projections_sum
+    return -projections_sum / np.sum(weights)
 
 def compute_C_memory(X, omega, u):
     assert len(X.shape) == 2
@@ -172,13 +172,12 @@ def update_L_C_single(x, L_C, n, omega, u):
     
     return L_C
 
-def compute_C_weighted(X, omega, u, log_weights):
+def compute_C_weighted(X, omega, u, weights):
     assert len(X.shape) == 2
     m = 1 if np.isscalar(u) else len(u)
     N = X.shape[0]
     D = X.shape[1]
     
-    weights = np.exp(log_weights)
     X_weighted = (X.T * weights).T
     
     C = np.zeros((m, m))
