@@ -27,6 +27,10 @@ class EstimatorBase(object):
     def objective(self, X):
         raise NotImplementedError()
     
+    @abstractmethod
+    def get_name(self):
+        return self.__class__.__name__
+    
     def xvalidate_objective(self, X, num_folds=5, num_repetitions=1):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         assert_positive_int(num_folds)
