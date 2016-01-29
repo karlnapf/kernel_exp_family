@@ -50,11 +50,11 @@ def update_b(X, b, n, omega, u):
     projections_sum = np.zeros(m)
     Phi2 = rff_feature_map(X, omega, u)
     for d in range(D):
-        projections_sum += np.mean(-Phi2 * (omega[d, :] ** 2), 0)
+        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), 0)
         
-    b_new = -projections_sum
+    b_new_times_N = -projections_sum
     N = len(X)
-    return (b * n + b_new * N) / (n + N)
+    return (b * n + b_new_times_N) / (n + N)
 
 def update_L_C(X, L_C, n, omega, u):
     assert len(X.shape) == 2
