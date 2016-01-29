@@ -23,13 +23,12 @@ if __name__ == '__main__':
     # note that m is set to N in order to call update_fit immediately,
     # as throws an error if called with less data
     sigma = 2
-    lmbda = 0.001
+    lmbda = 1.
     m = N
     est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
-    est.fit(X)
 
     # only for plotting
-    all_data = [X]
+    all_data = []
     
     # plotting grid
     width = 6
@@ -41,34 +40,34 @@ if __name__ == '__main__':
     fig_count = 1
     plt.subplot(3, 3, fig_count)
     _, G_true = pdf_grid(Xs, Ys, ground_truth())
-    visualise_array(Xs, Ys, G_true, np.vstack(all_data))
+    visualise_array(Xs, Ys, G_true)
     plt.title("Gradient norm, ground truth")
     
     # plot initial fit
-    fig_count +=1
+    fig_count += 1
     plt.subplot(3, 3, fig_count)
     D, G = pdf_grid(Xs, Ys, est)
-    visualise_array(Xs, Ys, G, np.vstack(all_data))
-    plt.title("Gradient norm, initial fit, N=%d" % (est.n))
+    visualise_array(Xs, Ys, G)
+    plt.title("Gradient norm, no data")
     plt.tight_layout()
 
     # online updates of the model
     for i in range(7):
-        X = np.random.randn((i+1)*20, est.D)
-        
-        # API for updating estimator
-        for x in X:
-            est.update_fit(x)
+        X = np.random.randn(3, est.D)
         
         # only for plotting
         all_data.append(X)
+        
+        # API for updating estimator
+        est.update_fit(X)
+        
             
         # visualise current fit
         fig_count += 1
         plt.subplot(3, 3, fig_count)
         D, G = pdf_grid(Xs, Ys, est)
         visualise_array(Xs, Ys, G, np.vstack(all_data))
-        plt.title("Gradient norm, N=%d" % (est.n))
+        plt.title("Gradient norm, N=%d" % est.n)
         plt.tight_layout()
         
     plt.show()

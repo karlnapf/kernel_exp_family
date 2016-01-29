@@ -5,12 +5,12 @@ from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.finite.develop.gaussian import compute_b_memory, \
     compute_C_memory, _objective_sym_completely_manual, \
-    _objective_sym_half_manual
+    _objective_sym_half_manual, compute_b_weighted, compute_C_weighted
 from kernel_exp_family.estimators.finite.gaussian import fit, objective, \
     compute_b, compute_C, update_b, update_C, update_L_C, \
     KernelExpFiniteGaussian
 from kernel_exp_family.kernels.kernels import rff_feature_map_grad2_d, \
-    rff_feature_map_grad_d, theano_available
+    rff_feature_map_grad_d, theano_available, rff_sample_basis
 import numpy as np
 
 
@@ -61,9 +61,8 @@ def test_fit():
     
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
-    lmbda = 1.
-    theta = fit(X, lmbda, omega, u)
-    theta_manual = np.linalg.solve(C + np.eye(m) * lmbda, b)
+    theta = fit(X, omega, u)
+    theta_manual = np.linalg.solve(C, b)
     assert_allclose(theta, theta_manual)
 
 def test_objective_sym_given_b_C():
@@ -73,14 +72,13 @@ def test_objective_sym_given_b_C():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    lmbda = 1.
     
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
     theta = np.random.randn(m)
     
-    J = objective(X, theta, lmbda, omega, u, b, C)
-    J_manual = 0.5 * np.dot(theta.T, np.dot(C + np.eye(m) * lmbda, theta)) - np.dot(theta, b)
+    J = objective(X, theta, omega, u, b, C)
+    J_manual = 0.5 * np.dot(theta.T, np.dot(C, theta)) - np.dot(theta, b)
     
     assert_close(J, J_manual)
 
@@ -91,14 +89,13 @@ def test_objective_sym_given_b_C_equals_given_nothing():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    lmbda = 1.
     
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
     theta = np.random.randn(m)
     
-    J = objective(X, theta, lmbda, omega, u, b, C)
-    J2 = objective(X, theta, lmbda, omega, u)
+    J = objective(X, theta, omega, u, b, C)
+    J2 = objective(X, theta, omega, u)
     
     assert_close(J, J2)
 
@@ -109,7 +106,6 @@ def test_objective_sym_equals_completely_manual_manually():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    lmbda = 1.
     theta = np.random.randn(m)
     
     J_manual = 0.
@@ -141,14 +137,13 @@ def test_objective_sym_equals_completely_manual_manually():
         assert_allclose(C_manual, C)
         
         # discard regularisation for these internal checks
-        J_n = objective(X[n].reshape(1, m), theta, 0, omega, u)
+        J_n = objective(X[n].reshape(1, m), theta, omega, u)
         J_n_2 = 0.5 * np.dot(theta, np.dot(C, theta)) - np.dot(theta, b)
         assert_allclose(J_n_2, J_n, rtol=1e-4)
         assert_allclose(J_n_manual, J_n, rtol=1e-4)
         
     J_manual /= N
-    J_manual += 0.5 * lmbda * np.dot(theta, theta)
-    J = objective(X, theta, lmbda, omega, u)
+    J = objective(X, theta, omega, u)
 
     assert_close(J, J_manual, decimal=5)
 
@@ -159,11 +154,10 @@ def test_objective_sym_equals_completely_manual():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    lmbda = 1.
     theta = np.random.randn(m)
      
-    J = objective(X, theta, lmbda, omega, u)
-    J_manual = _objective_sym_completely_manual(X, theta, lmbda, omega, u)
+    J = objective(X, theta, omega, u)
+    J_manual = _objective_sym_completely_manual(X, theta, omega, u)
      
     assert_close(J_manual, J, decimal=5)
 
@@ -174,11 +168,10 @@ def test_objective_sym_equals_half_manual():
     omega = np.random.randn(D, m)
     u = np.random.uniform(0, 2 * np.pi, m)
     X = np.random.randn(N, D)
-    lmbda = 1.
     theta = np.random.randn(m)
      
-    J = objective(X, theta, lmbda, omega, u)
-    J_manual = _objective_sym_half_manual(X, theta, lmbda, omega, u)
+    J = objective(X, theta, omega, u)
+    J_manual = _objective_sym_half_manual(X, theta, omega, u)
      
     assert_close(J_manual, J)
 
@@ -193,15 +186,14 @@ def test_fit_returns_min_1d_grid():
     
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
-    lmbda = .001
-    theta = fit(X, lmbda, omega, u)
-    J = objective(X, theta, lmbda, omega, u, b, C)
+    theta = fit(X, omega, u)
+    J = objective(X, theta, omega, u, b, C)
     
     thetas_test = np.linspace(theta - 3, theta + 3)
     Js = np.zeros(len(thetas_test))
     
     for i, theta_test in enumerate(thetas_test):
-        Js[i] = objective(X, np.array([theta_test]), lmbda, omega, u, b, C)
+        Js[i] = objective(X, np.array([theta_test]), omega, u, b, C)
     
     
 #     plt.plot(thetas_test, Js)
@@ -222,14 +214,13 @@ def test_fit_returns_min_random_search():
     
     C = compute_C_memory(X, omega, u)
     b = compute_b_memory(X, omega, u)
-    lmbda = 1.
-    theta = fit(X, lmbda, omega, u)
-    J = objective(X, theta, lmbda, omega, u, b, C)
+    theta = fit(X, omega, u)
+    J = objective(X, theta, omega, u, b, C)
     
     for noise in [0.0001, 0.001, 0.1, 1, 10, 100]:
         for _ in range(10):
             theta_test = np.random.randn(m) * noise + theta
-            J_test = objective(X, theta_test, lmbda, omega, u, b, C)
+            J_test = objective(X, theta_test, omega, u, b, C)
         
             assert_less_equal(J, J_test)
         
@@ -244,6 +235,88 @@ def test_compute_b_equals_compute_b_memory():
     b = compute_b(X, omega, u)
     b_storage = compute_b_memory(X, omega, u)
     assert_allclose(b, b_storage)
+
+def test_compute_b_equals_compute_b_weighted_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    log_weights = np.log(np.ones(N))
+    
+    b = compute_b(X, omega, u)
+    b_weighted = compute_b_weighted(X, omega, u, log_weights)
+    assert_allclose(b, b_weighted)
+
+def test_compute_b_equals_compute_b_weighted_non_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    weights = np.random.randn(N)
+    weights = weights / np.sum(weights) * N
+    log_weights = np.log(weights)
+    X_weighted = np.array([X[i] * np.exp(log_weights[i]) for i in range(N)])
+    
+    b_manual = compute_b(X_weighted, omega, u)
+    b_weighted = compute_b_weighted(X, omega, u, log_weights)
+    assert_allclose(b_manual, b_weighted)
+
+def test_compute_b_equals_compute_b_weighted_no_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    
+    b = compute_b(X, omega, u)
+    b_weighted = compute_b_weighted(X, omega, u, log_weights=None)
+    assert_allclose(b, b_weighted)
+
+def test_compute_C_equals_compute_C_weighted_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    log_weights = np.log(np.ones(N))
+    
+    C = compute_C(X, omega, u)
+    C_weighted = compute_C_weighted(X, omega, u, log_weights)
+    assert_allclose(C, C_weighted)
+
+def test_compute_C_equals_compute_C_weighted_non_constant_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    weights = np.random.randn(N)
+    weights = weights / np.sum(weights) * N
+    log_weights = np.log(weights)
+    X_weighted = np.array([X[i] * np.exp(log_weights[i]) for i in range(N)])
+    
+    C_manual = compute_C(X_weighted, omega, u)
+    C_weighted = compute_C_weighted(X, omega, u, log_weights)
+    assert_allclose(C_manual, C_weighted)
+
+def test_compute_C_equals_compute_C_weighted_no_weights():
+    N = 100
+    D = 3
+    m = 10
+    omega = np.random.randn(D, m)
+    u = np.random.uniform(0, 2 * np.pi, m)
+    X = np.random.randn(N, D)
+    
+    C = compute_C(X, omega, u)
+    C_weighted = compute_C_weighted(X, omega, u, log_weights=None)
+    assert_allclose(C, C_weighted)
 
 def test_compute_C_equals_compute_C_memory():
     N = 100
@@ -344,3 +417,117 @@ def test_third_order_derivative_tensor_execute():
     est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
     est.fit(X)
     est.third_order_derivative_tensor(X[0])
+
+def test_update_b_equals_compute_b_when_initialised_correctly():
+    sigma = 1.
+    N = 20
+    D = 2
+    m = 10
+    X = np.random.randn(N, D)
+    
+    # basis
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    # initial fit and update
+    b_update = np.zeros(m)
+    n_update = m
+    for x in X:
+        b_update = update_b(x, b_update, n_update, omega, u)
+        n_update += 1
+    
+    # initial fit and batch (average of "fake" b and new observations
+    b_fake = np.zeros(m)
+    n_fake = m
+    b_batch = (b_fake * n_fake + compute_b(X, omega, u) * N) / (n_fake + N)
+    
+    assert_allclose(b_update, b_batch)
+
+def test_update_L_C_equals_compute_L_C_when_initialised_correctly():
+    sigma = 1.
+    lmbda = 2.
+    N = 20
+    D = 2
+    m = 10
+    X = np.random.randn(N, D)
+    
+    # basis
+    omega, u = rff_sample_basis(D, m, sigma)
+    
+    # initial fit and update
+    L_C_update = np.eye(m) * np.sqrt(lmbda)
+    n_update = m
+    for x in X:
+        L_C_update = update_L_C(x, L_C_update, n_update, omega, u)
+        n_update += 1
+    
+    # initial fit and batch (average of "fake" b and new observations
+    L_C_fake = np.eye(m) * np.sqrt(lmbda)
+    n_fake = m
+    C_batch = (np.dot(L_C_fake, L_C_fake.T) * n_fake + compute_C(X, omega, u) * N) / (n_fake + N)
+    L_C_batch = np.linalg.cholesky(C_batch)
+    
+    assert_allclose(L_C_update, L_C_batch)
+
+def test_KernelExpFiniteGaussian_fit_equals_update_fit():
+    sigma = 1.
+    lmbda = 2.
+    m = 2
+    N = 1
+    D = 2
+
+    rng_state = np.random.get_state()
+
+    np.random.seed(0)
+    est_batch = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    np.random.seed(0)
+    est_update = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    
+    np.random.set_state(rng_state)
+
+    assert_allclose(est_batch.b, est_update.b)
+    assert_allclose(est_batch.L_C, est_update.L_C)
+    assert_allclose(est_batch.n, est_update.n)
+    assert_allclose(est_batch.theta, est_update.theta)
+    
+    X = np.random.randn(N, D)
+    est_batch.fit(X)
+    
+    est_update.update_fit(X)
+    
+    assert_allclose(est_batch.b, est_update.b)
+    assert_allclose(est_batch.L_C, est_update.L_C)
+    assert_allclose(est_batch.n, est_update.n)
+    assert_allclose(est_batch.theta, est_update.theta)
+
+def test_KernelExpFiniteGaussian_fit_more_than_m_data_execute():
+    sigma = 1.
+    lmbda = 1.
+    m = 2
+    N = m + 1
+    D = 2
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    
+    X = np.random.randn(N, D)
+    est.fit(X)
+
+def test_KernelExpFiniteGaussian_fit_exactly_m_data_execute():
+    sigma = 1.
+    lmbda = 1.
+    m = 2
+    N = m
+    D = 2
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    
+    X = np.random.randn(N, D)
+    est.fit(X)
+
+def test_KernelExpFiniteGaussian_fit_less_than_m_data_execute():
+    sigma = 1.
+    lmbda = 1.
+    m = 20
+    N = 10
+    D = 2
+    est = KernelExpFiniteGaussian(sigma, lmbda, m, D)
+    
+    X = np.random.randn(N, D)
+    est.fit(X)

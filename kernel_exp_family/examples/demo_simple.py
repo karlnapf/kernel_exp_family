@@ -9,7 +9,7 @@ import numpy as np
 def get_KernelExpFiniteGaussian_instance(D):
     # arbitrary choice of parameters here
     sigma = 2
-    lmbda = 0.001
+    lmbda = 1
     m = 100
     return KernelExpFiniteGaussian(sigma, lmbda, m, D)
 

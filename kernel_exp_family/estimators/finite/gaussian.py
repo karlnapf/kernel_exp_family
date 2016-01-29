@@ -66,7 +66,6 @@ def update_L_C(x, L_C, n, omega, u):
     m = 1 if np.isscalar(u) else len(u)
     N = 1
     
-    # since C has a 1/n term in it
     L_C *= np.sqrt(n)
     
     # since cholupdate works on transposed version
@@ -90,29 +89,28 @@ def update_L_C(x, L_C, n, omega, u):
     
     return L_C
 
-def fit(X, lmbda, omega, u, b=None, C=None):
+def fit(X, omega, u, b=None, C=None):
     if b is None:
         b = compute_b(X, omega, u)
     
     if C is None:
         C = compute_C(X, omega, u)
     
-    theta = np.linalg.solve(C + lmbda * np.eye(len(C)), b)
+    theta = np.linalg.solve(C, b)
     return theta
 
 def fit_L_C_precomputed(b, L_C):
     theta = sp.linalg.cho_solve((L_C, True), b)
     return theta
 
-def objective(X, theta, lmbda, omega, u, b=None, C=None):
+def objective(X, theta, omega, u, b=None, C=None):
     if b is None:
         b = compute_b(X, omega, u)
         
     if C is None:
         C = compute_C(X, omega, u)
     
-    I = np.eye(len(theta))
-    return 0.5 * np.dot(theta, np.dot(C + lmbda * I, theta)) - np.dot(theta, b)
+    return 0.5 * np.dot(theta, np.dot(C, theta)) - np.dot(theta, b)
 
 def update_C(x, C, n, omega, u):
     D = omega.shape[0]
@@ -139,41 +137,56 @@ def update_C(x, C, n, omega, u):
 
 class KernelExpFiniteGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, m, D):
-        self.sigma = sigma 
+        self.sigma = sigma
         self.lmbda = lmbda
         self.m = m
         self.D = D
         self.omega, self.u = rff_sample_basis(D, m, sigma)
         
-        # components of linear system, stored for potential online updating
-        self.b = np.zeros(m)
-        self.C = np.eye(m)
-        
-        # number of terms
+        # zero actual data, different from n_with_fake data below
         self.n = 0
+    
+        self.b, self.L_C, self.n_with_fake = self._gen_initial_solution()
+        self.theta = fit_L_C_precomputed(self.b, self.L_C)
+    
+    def _gen_initial_solution(self):
+        # components of linear system, stored for online updating
+        b_fake = np.zeros(self.m)
+        L_C_fake = np.eye(self.m) * np.sqrt(self.lmbda)
         
-        # solution, initialise to flat function
-        self.theta = np.zeros(m)
+        # assume have observed m terms, which is needed for making the system well-posed
+        # the above L_C says that the m terms had covariance self.lmbda
+        # the above b says that the m terms had mean 0
+        n_fake = self.m
+        
+        return b_fake, L_C_fake, n_fake
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
+        N = len(X)
         
-        self.b = compute_b(X, self.omega, self.u)
-        self.C = compute_C(X, self.omega, self.u)
-        self.n = len(X)
+        # initialise solution
+        b_fake, L_C_fake, n_fake = self._gen_initial_solution()
         
-        self.theta = fit(X, self.lmbda, self.omega, self.u, self.b, self.C)
+        # "update" initial "fake" solution in the way the it is the same as repeated updating
+        self.b = (b_fake * n_fake + compute_b(X, self.omega, self.u) * N) / (n_fake + N)
+        C = (np.dot(L_C_fake, L_C_fake.T) * n_fake + compute_C(X, self.omega, self.u) * N) / (n_fake + N)
+        self.L_C = np.linalg.cholesky(C)
+        self.n_with_fake = n_fake + N
+        self.n = N
+        
+        self.theta = fit_L_C_precomputed(self.b, self.L_C)
     
-    def update_fit(self, x):
-        assert_array_shape(x, ndim=1, dims={0: self.D})
+    def update_fit(self, X):
+        assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        self.b = update_b(x, self.b, self.n, self.omega, self.u)
-        self.C = update_C(x, self.C, self.n, self.omega, self.u)
-        self.n += 1
+        for x in X:
+            self.b = update_b(x, self.b, self.n_with_fake, self.omega, self.u)
+            self.L_C = update_L_C(x, self.L_C, self.n_with_fake, self.omega, self.u)
+            self.n_with_fake += 1
+            self.n += 1
         
-        # TODO: this is currently O(m^3) rather than possibly O(m^2)
-        # can be achieved using low-rank updates of Cholesky of C
-        self.theta = fit(x, self.lmbda, self.omega, self.u, self.b, self.C)
+        self.theta = fit_L_C_precomputed(self.b, self.L_C)
         
     def log_pdf(self, x):
         if self.theta is None:
@@ -231,7 +244,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         # note we need to recompute b and C here
-        return objective(X, self.theta, self.lmbda, self.omega, self.u)
+        return objective(X, self.theta, self.omega, self.u)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']
