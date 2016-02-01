@@ -191,11 +191,12 @@ class KernelExpFiniteGaussian(EstimatorBase):
                                                  log_weights,
                                                  self.omega, self.u)
         
-
         # update terms and weights
         self.n += len(X)
-        stacked = np.hstack((self.log_sum_weights, log_weights))
-        self.log_sum_weights = log_sum_exp(stacked)
+        new_weights = np.zeros(N + 1)
+        new_weights[0] = self.log_sum_weights
+        new_weights[1:] = log_weights
+        self.log_sum_weights = log_sum_exp(new_weights)
         
         # finally update solution
         self.theta = fit_L_C_precomputed(self.b, self.L_C)
