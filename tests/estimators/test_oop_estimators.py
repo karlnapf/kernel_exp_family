@@ -470,22 +470,49 @@ def test_update_fit_increasing_n():
             assert est.n == old_n + N
 
 def test_update_fit_equals_batch():
+    N = 200
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        if est.supports_update_fit():
+            x_test = np.random.randn(est.D)
+            X1 = np.random.randn(N, est.D)
+            X2 = np.random.randn(N, est.D)
+            stacked = np.vstack((X1, X2))
+            
+            est.fit(stacked)
+            log_pdf_batch = est.log_pdf(x_test)
+            grad_batch = est.grad(x_test)
+            
+            est.fit(X1)
+            est.update_fit(X2)
+            
+            log_pdf_online = est.log_pdf(x_test)
+            grad_online = est.grad(x_test)
+            
+            assert_allclose(log_pdf_online, log_pdf_batch, err_msg=est.get_name())
+            assert_allclose(grad_online, grad_batch, err_msg=est.get_name())
+
+def test_update_fit_equals_batch_weighted():
     N = 100
     estimators = get_estimator_instances(N)
     
     for est in estimators:
         if est.supports_update_fit():
             x_test = np.random.randn(est.D)
-            X = np.random.randn(N, est.D)
+            X1 = np.random.randn(N, est.D)
             X2 = np.random.randn(N, est.D)
-            stacked = np.vstack((X, X2))
+            log_weights1 = np.log(np.random.rand(N))
+            log_weights2 = np.log(np.random.rand(N))
+            log_weights_stacked = np.hstack((log_weights1, log_weights2))
+            stacked = np.vstack((X1, X2))
             
-            est.fit(stacked)
+            est.fit(stacked, log_weights_stacked)
             log_pdf_batch = est.log_pdf(x_test)
             grad_batch = est.grad(x_test)
             
-            est.fit(X)
-            est.update_fit(X2)
+            est.fit(X1, log_weights1)
+            est.update_fit(X2, log_weights2)
             
             log_pdf_online = est.log_pdf(x_test)
             grad_online = est.grad(x_test)
@@ -538,15 +565,6 @@ def test_fit_with_weights_execute():
         X = np.random.randn(N, est.D)
         if est.supports_weights():
             est.fit(X, np.ones((N)))
-
-def test_fit_with_weights_negative_weights():
-    N = 100
-    estimators = get_estimator_instances(N)
-    
-    for est in estimators:
-        X = np.random.randn(N, est.D)
-        if est.supports_weights():
-            assert_raises(ValueError, est.fit, X, -np.ones(N))
 
 def test_fit_with_weights_wrong_input_shape():
     N = 100

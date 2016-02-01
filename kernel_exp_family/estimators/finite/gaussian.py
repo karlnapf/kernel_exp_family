@@ -3,12 +3,15 @@ from choldate._choldate import cholupdate
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_single, \
     rff_sample_basis, rff_feature_map_grad_single, theano_available
-from kernel_exp_family.tools.assertions import assert_array_shape,\
-    assert_array_non_negative
-from kernel_exp_family.tools.numerics import log_sum_exp
+from kernel_exp_family.tools.assertions import assert_array_shape
+from kernel_exp_family.tools.covariance_updates import log_weights_to_lmbdas
+from kernel_exp_family.tools.log import Log
+from kernel_exp_family.tools.numerics import log_sum_exp, log_mean_exp
 import numpy as np
 import scipy as sp
 
+
+logger = Log.get_logger()
 
 if theano_available:
     from kernel_exp_family.kernels.kernels import rff_feature_map_comp_hessian_theano, \
@@ -26,6 +29,46 @@ def compute_b(X, omega, u):
         
     return -projections_sum
 
+def update_b_L_C_weighted(X, b, L_C, log_sum_weights, log_weights, omega, u):
+    m = 1 if np.isscalar(u) else len(u)
+    N = X.shape[0]
+    D = X.shape[1]
+    
+    # transform weights into (1-\lmbda)*old_mean+ \lmbda*new_term style updates
+    lmbdas = log_weights_to_lmbdas(log_sum_weights, log_weights)
+    
+    # first and (negative) second derivatives of rff feature map
+    projection = np.dot(X, omega) + u
+    Phi = np.cos(projection) * np.sqrt(2. / m)
+    Phi2 = np.sin(projection) * np.sqrt(2. / m)
+    
+    # not needed any longer
+    del projection
+    
+    # work on upper triangular cholesky internally
+    L_R = L_C.T
+    
+    b_new_term = np.zeros(m)
+    for i in range(N):
+        # downscale L_C once for every datum
+        L_R *= np.sqrt(1 - lmbdas[i])
+        
+        b_new_term[:] = 0
+        for d in range(D):
+            b_new_term += Phi[i] * (omega[d, :] ** 2)
+            
+            # L_C is updated D times for every datum, each with fixed lmbda
+            C_new_term = Phi2[i] * omega[d, :] * np.sqrt(lmbdas[i])
+            cholupdate(L_R, C_new_term)
+        
+        # b is updated once per datum
+        b = (1 - lmbdas[i]) * b + lmbdas[i] * b_new_term
+    
+    # transform back to lower triangular version
+    L_C = L_R.T
+    
+    return b, L_C
+
 def compute_C(X, omega, u):
     assert len(X.shape) == 2
     m = 1 if np.isscalar(u) else len(u)
@@ -42,128 +85,6 @@ def compute_C(X, omega, u):
         C += np.tensordot(temp, temp, [0, 0])
 
     return C / N
-
-def update_b(X, b, n, omega, u):
-    assert len(X.shape) == 2
-    m = 1 if np.isscalar(u) else len(u)
-    D = X.shape[1]
-    
-    projections_sum = np.zeros(m)
-    Phi2 = rff_feature_map(X, omega, u)
-    for d in range(D):
-        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), 0)
-        
-    b_new_times_N = -projections_sum
-    N = len(X)
-    return (b * n + b_new_times_N) / (n + N)
-
-def update_L_C(X, L_C, n, omega, u):
-    assert len(X.shape) == 2
-    m = 1 if np.isscalar(u) else len(u)
-    N = X.shape[0]
-    D = X.shape[1]
-    
-    # unscale
-    L_C *= np.sqrt(n)
-    
-    # since cholupdate works on transposed version
-    L_C = L_C.T
-    
-    projection = np.dot(X, omega) + u
-    np.sin(projection, projection)
-    projection *= -np.sqrt(2. / m)
-    temp = np.zeros((N, m))
-    for d in range(D):
-        temp = -projection * omega[d, :]
-        for u in temp:
-            cholupdate(L_C, u)
-
-    # since cholupdate works on transposed version
-    L_C = L_C.T
-    
-    # since the new C has a 1/(n+len(X)) term in it
-    L_C /= np.sqrt(n + len(X))
-
-    return L_C
-
-def compute_C_weighted(X, omega, u, weights):
-    assert len(X.shape) == 2
-    m = 1 if np.isscalar(u) else len(u)
-    N = X.shape[0]
-    D = X.shape[1]
-    
-    X_weighted = (X.T * weights).T
-    
-    C = np.zeros((m, m))
-    projection = np.dot(X_weighted, omega) + u
-    np.sin(projection, projection)
-    projection *= -np.sqrt(2. / m)
-    temp = np.zeros((N, m))
-    for d in range(D):
-        temp = -projection * omega[d, :]
-        C += np.tensordot(temp, temp, [0, 0])
-
-    return C / np.sum(weights)
-
-def update_L_C_weighted(X, L_C, sum_weights, omega, u, weights):
-    assert len(X.shape) == 2
-    m = 1 if np.isscalar(u) else len(u)
-    N = X.shape[0]
-    D = X.shape[1]
-    
-    X = (X.T * weights).T
-    
-    # unscale
-    L_C *= np.sqrt(sum_weights)
-    
-    # since cholupdate works on transposed version
-    L_C = L_C.T
-    
-    projection = np.dot(X, omega) + u
-    np.sin(projection, projection)
-    projection *= -np.sqrt(2. / m)
-    temp = np.zeros((N, m))
-    for d in range(D):
-        temp = -projection * omega[d, :]
-        for u in temp:
-            cholupdate(L_C, u)
-
-    # since cholupdate works on transposed version
-    L_C = L_C.T
-    
-    # since the new C has a 1/(n+sum(weights)) term in it
-    L_C /= np.sqrt(sum_weights + np.sum(weights))
-
-    return L_C
-
-def compute_b_weighted(X, omega, u, weights):
-    m = 1 if np.isscalar(u) else len(u)
-    D = X.shape[1]
-
-    X_weighted = (X.T * weights).T
-
-    projections_sum = np.zeros(m)
-    Phi2 = rff_feature_map(X_weighted, omega, u)
-    for d in range(D):
-        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), axis=0)
-        
-    return -projections_sum / np.sum(weights)
-
-def update_b_weighted(X, b, sum_weights_old, omega, u, weights):
-    assert len(X.shape) == 2
-    m = 1 if np.isscalar(u) else len(u)
-    D = X.shape[1]
-    
-    X_weighted = (X.T * weights).T
-    
-    projections_sum = np.zeros(m)
-    Phi2 = rff_feature_map(X_weighted, omega, u)
-    for d in range(D):
-        projections_sum += np.sum(-Phi2 * (omega[d, :] ** 2), 0)
-        
-    b_new_times_sum_weights = -projections_sum
-    sum_weights = np.sum(weights)
-    return (b * sum_weights_old + b_new_times_sum_weights) / (sum_weights_old + sum_weights)
 
 def fit(X, omega, u, b=None, C=None):
     if b is None:
@@ -219,12 +140,24 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.D = D
         self.omega, self.u = rff_sample_basis(D, m, sigma)
         
-        # zero actual data, different from n_with_fake data below
-        self.n = 0
-        
+        # zero actual data, different from sum_weights data below
         # self.sum_weights is number of data and fake data if weights are all 1
-        self.b, self.L_C, self.sum_weights = self._gen_initial_solution()
-        self.theta = fit_L_C_precomputed(self.b, self.L_C)
+        self.n = 0
+    
+        self._initialise_solution()
+    
+    def _initialise_solution(self):
+        # components of linear system, stored for online updating
+        # assume have observed fake terms, which is needed for making the system well-posed
+        # the L_C says that the fake terms had covariance self.lmbda, which is a regulariser
+        self.L_C = np.eye(self.m) * np.sqrt(self.lmbda)
+        
+        # b and the sum of weights is taken from first batch of updates to avoid scaling issues
+        self.b = None
+        self.log_sum_weights = None
+        
+        # initial solution is just a flat function
+        self.theta = np.zeros(self.m)
     
     def supports_update_fit(self):
         return True
@@ -232,54 +165,43 @@ class KernelExpFiniteGaussian(EstimatorBase):
     def supports_weights(self):
         return True
     
-    def _gen_initial_solution(self):
-        # components of linear system, stored for online updating
-        b_fake = np.zeros(self.m)
-        L_C_fake = np.eye(self.m) * np.sqrt(self.lmbda)
+    def fit(self, X, log_weights=None):
+        assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        # assume have observed m terms, which is needed for making the system well-posed
-        # the above L_C says that the m terms had covariance self.lmbda
-        # the above b says that the m terms had mean 0
-        n_fake = self.m
+        N = len(X)
+        if log_weights is None:
+            log_weights = np.log(np.ones(N))
+        assert_array_shape(log_weights, ndim=1, dims={0: N})
         
-        return b_fake, L_C_fake, n_fake
+        # batch learning here corresponds to repeated online-learning
+        self._initialise_solution()
+        self.update_fit(X, log_weights)
     
-    def fit(self, X, weights=None):
+    def update_fit(self, X, log_weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         N = len(X)
         
-        if weights is None:
-            weights = np.ones(N)
-        assert_array_shape(weights, ndim=1, dims={0: N})
-        assert_array_non_negative(weights)
+        if log_weights is None:
+            log_weights = np.zeros(N)
+        assert_array_shape(log_weights, ndim=1, dims={0: N})
         
-        # initialise solution
-        b_fake, L_C_fake, n_fake = self._gen_initial_solution()
+        # first update: use first of X and log_weights
+        if self.log_sum_weights is None:
+            self.log_sum_weights = log_weights[0]
+            self.b = compute_b(X[0].reshape(1, self.D), self.omega, self.u)
         
-        # "update" initial "fake" solution in the way the it is the same as repeated updating
-        sum_weights = np.sum(weights)
-        new_sum_weights = n_fake + sum_weights
-        self.b = (b_fake * n_fake + compute_b_weighted(X, self.omega, self.u, weights) * sum_weights) / new_sum_weights
-        C = (np.dot(L_C_fake, L_C_fake.T) * n_fake + compute_C_weighted(X, self.omega, self.u, weights) * sum_weights) / new_sum_weights
-        self.L_C = np.linalg.cholesky(C)
-        self.sum_weights = new_sum_weights
-        self.n = N
+        self.b, self.L_C = update_b_L_C_weighted(X, self.b, self.L_C,
+                                                 self.log_sum_weights,
+                                                 log_weights,
+                                                 self.omega, self.u)
         
-        self.theta = fit_L_C_precomputed(self.b, self.L_C)
-    
-    def update_fit(self, X, weights=None):
-        assert_array_shape(X, ndim=2, dims={1: self.D})
-        N = len(X)
-        
-        if weights is None:
-            weights = np.ones(N)
-        assert_array_shape(weights, ndim=1, dims={0: N})
-        
-        self.b = update_b_weighted(X, self.b, self.sum_weights, self.omega, self.u, weights)
-        self.L_C = update_L_C_weighted(X, self.L_C, self.sum_weights, self.omega, self.u, weights)
+
+        # update terms and weights
         self.n += len(X)
-        self.sum_weights += np.sum(weights)
+        stacked = np.hstack((self.log_sum_weights, log_weights))
+        self.log_sum_weights = log_sum_exp(stacked)
         
+        # finally update solution
         self.theta = fit_L_C_precomputed(self.b, self.L_C)
     
     def log_pdf(self, x):
