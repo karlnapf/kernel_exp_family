@@ -5,13 +5,9 @@ from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_s
     rff_sample_basis, rff_feature_map_grad_single, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.tools.covariance_updates import log_weights_to_lmbdas
-from kernel_exp_family.tools.log import Log
-from kernel_exp_family.tools.numerics import log_sum_exp, log_mean_exp
+from kernel_exp_family.tools.numerics import log_sum_exp
 import numpy as np
 import scipy as sp
-
-
-logger = Log.get_logger()
 
 if theano_available:
     from kernel_exp_family.kernels.kernels import rff_feature_map_comp_hessian_theano, \
@@ -141,7 +137,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.omega, self.u = rff_sample_basis(D, m, sigma)
         
         # zero actual data, different from sum_weights data below
-        # self.sum_weights is number of data and fake data if weights are all 1
+        # self.log_sum_weights is number of data and fake data if weights are all 1
         self.n = 0
     
         self._initialise_solution()
