@@ -5,9 +5,14 @@ from kernel_exp_family.kernels.kernels import rff_feature_map, rff_feature_map_s
     rff_sample_basis, rff_feature_map_grad_single, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.tools.covariance_updates import log_weights_to_lmbdas
+from kernel_exp_family.tools.log import Log
 from kernel_exp_family.tools.numerics import log_sum_exp
 import numpy as np
 import scipy as sp
+
+
+logger = Log.get_logger()
+
 
 if theano_available:
     from kernel_exp_family.kernels.kernels import rff_feature_map_comp_hessian_theano, \
@@ -186,10 +191,21 @@ class KernelExpFiniteGaussian(EstimatorBase):
             self.log_sum_weights = log_weights[0]
             self.b = compute_b(X[0].reshape(1, self.D), self.omega, self.u)
         
+        old_L_C = np.array(self.L_C, copy=True)
         self.b, self.L_C = update_b_L_C_weighted(X, self.b, self.L_C,
                                                  self.log_sum_weights,
                                                  log_weights,
                                                  self.omega, self.u)
+        
+        if np.any(np.isnan(self.L_C)) or np.any(np.isinf(self.L_C)):
+            logger.warning("Numerical error while updating Cholesky factor of C.\n"
+                         "Before update:\n%s\n"
+                         "After update:\n%s\n"
+                         "Updating data:\n%s\n"
+                         "Updating log weights:\n%s\n"
+                         % (str(old_L_C), str(self.L_C), str(X), str(log_weights))
+                         )
+            raise RuntimeError("Numerical error while updating Cholesky factor of C.")
         
         # update terms and weights
         self.n += len(X)
