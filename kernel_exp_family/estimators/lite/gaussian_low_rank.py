@@ -175,19 +175,19 @@ class KernelExpLiteGaussianLowRank(KernelExpLiteGaussian):
 
 class KernelExpLiteGaussianLowRankAdaptive(KernelExpLiteGaussianLowRank):
     def __init__(self, sigma, lmbda, D, N, eta=0.1, cg_tol=1e-3, cg_maxiter=None,
-                 num_initial_evaluations=3, n_iter=3, minimum_size_learning=100,
-                 n_initial_relearn=1, n_iter_relearn=1,
+                 num_initial_evaluations=3, num_evaluations=3, minimum_size_learning=100,
+                 num_initial_evaluations_relearn=1, num_evaluations_relearn=1,
                  param_bounds={'sigma': [-3,3]}):
         KernelExpLiteGaussianLowRank.__init__(self, sigma, lmbda, D, N, eta, cg_tol, cg_maxiter)
         
         self.bo = None
         self.param_bounds = param_bounds
-        self.n_initial = num_initial_evaluations
-        self.num_iter = n_iter
+        self.num_initial_evaluations = num_initial_evaluations
+        self.num_iter = num_evaluations
         self.minimum_size_learning = minimum_size_learning
         
-        self.n_initial_relearn = n_initial_relearn
-        self.n_iter_relearn = n_iter_relearn
+        self.n_initial_relearn = num_initial_evaluations_relearn
+        self.n_iter_relearn = num_evaluations_relearn
         
         self.learning_parameters = False
         
@@ -197,7 +197,7 @@ class KernelExpLiteGaussianLowRankAdaptive(KernelExpLiteGaussianLowRank):
             self.learning_parameters = True
             if self.bo is None:
                 logger.info("Bayesian optimisation from scratch.")
-                self.bo = BayesOptSearch(self, X, self.param_bounds, n_initial=self.n_initial)
+                self.bo = BayesOptSearch(self, X, self.param_bounds, n_initial=self.num_initial_evaluations)
                 best_params = self.bo.optimize(self.num_iter)
             else:
                 logger.info("Bayesian optimisation using prior model.")

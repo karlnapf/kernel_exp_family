@@ -45,7 +45,7 @@ class BayesOptSearch(object):
         self.param_bounds = param_bounds
         self.objective_log = objective_log
         self.log_bound = objective_log_bound
-        self.n_initial = num_initial_evaluations
+        self.num_initial_evaluations = num_initial_evaluations
 
         # parameter space dimensions correspond to sorted parameter bound keys
         self.param_names = np.sort(param_bounds.keys())
@@ -53,11 +53,11 @@ class BayesOptSearch(object):
         
         self.initialised = False
 
-    def _init_model(self, n_initial, previous_model=None):
-        logger.info("Initial fitting using %d points" % n_initial)
+    def _init_model(self, num_initial_evaluations, previous_model=None):
+        logger.info("Initial fitting using %d points" % num_initial_evaluations)
         
         # get initial data and some test points.
-        self.X = list(inits.init_latin(self.bounds, n_initial))
+        self.X = list(inits.init_latin(self.bounds, num_initial_evaluations))
         self.Y = [self._eval(x) for x in self.X]
         
         # initial values for kernel parameters, taken from pybo code
@@ -106,7 +106,7 @@ class BayesOptSearch(object):
     
     def optimize(self, num_iter=10):
         if not self.initialised:
-            self._init_model(n_initial=self.n_initial)
+            self._init_model(num_initial_evaluations=self.num_initial_evaluations)
         
         logger.info("Optimising %d iterations" % num_iter)
         for _ in range(num_iter):
@@ -124,7 +124,7 @@ class BayesOptSearch(object):
         
         return self._search_domain_to_param_dict(self.xbest)
 
-    def re_initialise(self, new_data=None, n_initial=1):
+    def re_initialise(self, new_data=None, num_initial_evaluations=1):
         if not self.initialised:
             raise RuntimeError("Model needs to be optimised before re-initialisation is possible. Call optimise() method")
         
@@ -135,7 +135,7 @@ class BayesOptSearch(object):
         previous_model = self.model._models[np.random.randint(self.model._n)]
         
         # use as prior mean
-        self._init_model(n_initial=n_initial, previous_model=previous_model)
+        self._init_model(num_initial_evaluations=num_initial_evaluations, previous_model=previous_model)
         
         return self._search_domain_to_param_dict(self.xbest)
             

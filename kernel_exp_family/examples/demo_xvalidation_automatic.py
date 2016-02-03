@@ -21,9 +21,9 @@ if __name__ == '__main__':
     # fully automatic parameter tuning in every fit call
     est = KernelExpLiteGaussianAdaptive(sigma=1., lmbda=.001, D=D, N=N,
                                         # these paramters are all optional, to controll Bayesian opt.
-                                        num_initial_evaluations=3, n_iter=3, minimum_size_learning=100,
+                                        num_initial_evaluations=3, num_evaluations=3, minimum_size_learning=100,
                                         # these depend on how much data changes between the "fit" calls
-                                        n_initial_relearn=3, n_iter_relearn=3,
+                                        num_initial_evaluations_relearn=3, num_evaluations_relearn=3,
                                         # this can be used to adjust search spaces or include more parameters
                                         # by default, only sigma is optimised
                                         param_bounds={'sigma': [-3, 3]}

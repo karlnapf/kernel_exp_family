@@ -61,7 +61,7 @@ if __name__ == '__main__':
         X = np.random.randn(200, D) * .1
         
         # reset optimiser, which but initialise from old model, sample 3 random point to update
-        best_params = bo.re_initialise(new_data=X, n_initial=3)
+        best_params = bo.re_initialise(new_data=X, num_initial_evaluations=3)
         
         # this optimisation now runs on the "new" objective
         best_params = bo.optimize(num_iter=3)
