@@ -429,7 +429,7 @@ def test_KernelExpFiniteGaussian_fit_equals_update_fit():
 
     assert_equal(est_batch.b, None)
     assert_equal(est_update.b, None)
-    assert_allclose(est_batch.L_C, est_update.L_C)
+    assert_equal(est_batch.L_C, None)
     assert_allclose(est_batch.n, est_update.n)
     
     assert_allclose(est_batch.theta, np.zeros(m))

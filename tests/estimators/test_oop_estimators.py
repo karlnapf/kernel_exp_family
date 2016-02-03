@@ -469,8 +469,81 @@ def test_update_fit_increasing_n():
             
             assert est.n == old_n + N
 
-def test_update_fit_equals_batch():
-    N = 200
+def test_update_fit_equals_batch_from_scratch():
+    N = 100
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est1, est2 in zip(estimators, estimators2):
+        if est1.supports_update_fit():
+            x_test = np.random.randn(est1.D)
+            X = np.random.randn(N, est1.D)
+            
+            est1.fit(X)
+            log_pdf_batch = est1.log_pdf(x_test)
+            grad_batch = est1.grad(x_test)
+            
+            est2.update_fit(X)
+            
+            log_pdf_online = est1.log_pdf(x_test)
+            grad_online = est1.grad(x_test)
+            
+            assert_allclose(log_pdf_online, log_pdf_batch, err_msg=est1.get_name())
+            assert_allclose(grad_online, grad_batch, err_msg=est1.get_name())
+
+def test_update_fit_equals_batch_with_prevous_fit_N_1():
+    N = 1
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        if est.supports_update_fit():
+            x_test = np.random.randn(est.D)
+            X1 = np.random.randn(N, est.D)
+            X2 = np.random.randn(N, est.D)
+            stacked = np.vstack((X1, X2))
+            
+            est.fit(stacked)
+            log_pdf_batch = est.log_pdf(x_test)
+            grad_batch = est.grad(x_test)
+            
+            est.fit(X1)
+            est.update_fit(X2)
+            
+            log_pdf_online = est.log_pdf(x_test)
+            grad_online = est.grad(x_test)
+            
+            assert_allclose(log_pdf_online, log_pdf_batch, err_msg=est.get_name())
+            assert_allclose(grad_online, grad_batch, err_msg=est.get_name())
+
+def test_update_fit_equals_batch_with_prevous_fit_N_2():
+    N = 2
+    estimators = get_estimator_instances(N)
+    
+    for est in estimators:
+        if est.supports_update_fit():
+            x_test = np.random.randn(est.D)
+            X1 = np.random.randn(N, est.D)
+            X2 = np.random.randn(N, est.D)
+            stacked = np.vstack((X1, X2))
+            
+            est.fit(stacked)
+            log_pdf_batch = est.log_pdf(x_test)
+            grad_batch = est.grad(x_test)
+            
+            est.fit(X1)
+            est.update_fit(X2)
+            
+            log_pdf_online = est.log_pdf(x_test)
+            grad_online = est.grad(x_test)
+            
+            assert_allclose(log_pdf_online, log_pdf_batch, err_msg=est.get_name())
+            assert_allclose(grad_online, grad_batch, err_msg=est.get_name())
+
+def test_update_fit_equals_batch_with_prevous_fit():
+    N = 100
     estimators = get_estimator_instances(N)
     
     for est in estimators:
@@ -596,7 +669,7 @@ def test_fit_with_weights_wrong_input_type():
             assert_raises(TypeError, est.fit, X, 0.)
 
 def test_fit_with_weights_constant_weights_equals_no_weights():
-    N = 100
+    N = 200
     estimators = get_estimator_instances(N)
     
     for est in estimators:
@@ -607,10 +680,141 @@ def test_fit_with_weights_constant_weights_equals_no_weights():
             log_pdf = est.log_pdf(x_test)
             grad = est.grad(x_test)
             
-            weights = np.ones(N)
-            est.fit(X, weights)
+            log_weights = np.log(np.ones(N))
+            est.fit(X, log_weights)
             log_pdf_weighted = est.log_pdf(x_test)
             grad_weighted = est.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
+
+def test_fit_with_weights_constant_weights_equals_no_weights_N_1():
+    N = 1
+    
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est, est2 in zip(estimators, estimators2):
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            x_test = np.random.randn(est.D)
+            est.fit(X)
+            log_pdf = est.log_pdf(x_test)
+            grad = est.grad(x_test)
+            
+            log_weights = np.log(np.ones(N))
+            est2.fit(X, log_weights)
+            log_pdf_weighted = est2.log_pdf(x_test)
+            grad_weighted = est2.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
+
+def test_fit_with_weights_constant_weights_equals_no_weights_N_2():
+    N = 2
+    
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est, est2 in zip(estimators, estimators2):
+        X = np.random.randn(N, est.D)
+        if est.supports_weights():
+            x_test = np.random.randn(est.D)
+            est.fit(X)
+            log_pdf = est.log_pdf(x_test)
+            grad = est.grad(x_test)
+            
+            log_weights = np.log(np.ones(N))
+            est2.fit(X, log_weights)
+            log_pdf_weighted = est2.log_pdf(x_test)
+            grad_weighted = est2.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
+
+def test_update_fit_with_weights_constant_weights_equals_no_weights():
+    N = 200
+
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est1, est2 in zip(estimators, estimators2):
+        X = np.random.randn(N, est1.D)
+        
+        if est1.supports_weights():
+            x_test = np.random.randn(est1.D)
+            
+            log_weights = np.log(np.ones(N))
+            est1.update_fit(X)
+            est2.update_fit(X, log_weights)
+
+            log_pdf = est1.log_pdf(x_test)
+            grad = est1.grad(x_test)
+            log_pdf_weighted = est2.log_pdf(x_test)
+            grad_weighted = est2.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
+
+def test_update_fit_with_weights_constant_weights_equals_no_weights_N_1():
+    N = 1
+
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est1, est2 in zip(estimators, estimators2):
+        X = np.random.randn(N, est1.D)
+        
+        if est1.supports_weights():
+            x_test = np.random.randn(est1.D)
+            
+            log_weights = np.log(np.ones(N))
+            est1.update_fit(X)
+            est2.update_fit(X, log_weights)
+
+            log_pdf = est1.log_pdf(x_test)
+            grad = est1.grad(x_test)
+            log_pdf_weighted = est2.log_pdf(x_test)
+            grad_weighted = est2.grad(x_test)
+            
+            assert_allclose(log_pdf, log_pdf_weighted)
+            assert_allclose(grad_weighted, grad)
+
+def test_update_fit_with_weights_constant_weights_equals_no_weights_N_2():
+    N = 1
+
+    # make sure both estimator sets are built using the same random seed
+    rng_state = np.random.get_state()
+    estimators = get_estimator_instances(N)
+    np.random.set_state(rng_state)
+    estimators2 = get_estimator_instances(N)
+    
+    for est1, est2 in zip(estimators, estimators2):
+        X = np.random.randn(N, est1.D)
+        
+        if est1.supports_weights():
+            x_test = np.random.randn(est1.D)
+            
+            log_weights = np.log(np.ones(N))
+            est1.update_fit(X)
+            est2.update_fit(X, log_weights)
+
+            log_pdf = est1.log_pdf(x_test)
+            grad = est1.grad(x_test)
+            log_pdf_weighted = est2.log_pdf(x_test)
+            grad_weighted = est2.grad(x_test)
             
             assert_allclose(log_pdf, log_pdf_weighted)
             assert_allclose(grad_weighted, grad)

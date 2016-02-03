@@ -141,21 +141,17 @@ class KernelExpFiniteGaussian(EstimatorBase):
         self.D = D
         self.omega, self.u = rff_sample_basis(D, m, sigma)
         
-        # zero actual data, different from sum_weights data below
-        # self.log_sum_weights is number of data and fake data if weights are all 1
-        self.n = 0
-    
         self._initialise_solution()
     
     def _initialise_solution(self):
         # components of linear system, stored for online updating
-        # assume have observed fake terms, which is needed for making the system well-posed
-        # the L_C says that the fake terms had covariance self.lmbda, which is a regulariser
-        self.L_C = np.eye(self.m) * np.sqrt(self.lmbda)
-        
-        # b and the sum of weights is taken from first batch of updates to avoid scaling issues
+        # set in first iteration of update_fit, or in fit
+        self.L_C = None
         self.b = None
         self.log_sum_weights = None
+        
+        # number of observed points via fit or update_fit
+        self.n = 0
         
         # initial solution is just a flat function
         self.theta = np.zeros(self.m)
@@ -168,28 +164,73 @@ class KernelExpFiniteGaussian(EstimatorBase):
     
     def fit(self, X, log_weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        
         N = len(X)
-        if log_weights is None:
-            log_weights = np.log(np.ones(N))
-        assert_array_shape(log_weights, ndim=1, dims={0: N})
-        
-        # batch learning here corresponds to repeated online-learning
+
+        # in any case, delete previous solution
         self._initialise_solution()
-        self.update_fit(X, log_weights)
+        
+        if N <= 0:
+            # dont do anything if no data observed
+            return
+        elif N == 1:
+            # can get away with single update as not expensive
+            self.update_fit(X, log_weights)
+            return
+        
+        if log_weights is None:
+            # b is the same as first x is used as b straight away in update_fit
+            self.b = compute_b(X, self.omega, self.u)
+            
+            # remove first term from C computation as it is replaced with regulariser
+            C = compute_C(X[1:], self.omega, self.u)
+            
+            # C so far consists of the average of N-1 terms
+            # additional term is regulariser C (first in update_fit)
+            # use Knuth online-update for new mean, which is average of N terms
+            C = (C * (N - 1) + np.eye(self.m) * self.lmbda) / N
+#             delta = np.eye(self.m) * self.lmbda - C
+#             C += delta / N
+            self.L_C = np.linalg.cholesky(C)
+            
+            # as all weights are equal, this corresponds to repeated update_fit calls
+            self.log_sum_weights = np.log(N)
+            
+            self.n = N
+            
+            self.theta = fit_L_C_precomputed(self.b, self.L_C)
+        else:
+            # weighted batch learning here corresponds to repeated online-learning
+            assert_array_shape(log_weights, ndim=1, dims={0: N})
+            self.update_fit(X, log_weights)
     
     def update_fit(self, X, log_weights=None):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         N = len(X)
         
+        # dont do anything if no data observed
+        if N == 0:
+            return
+        
         if log_weights is None:
-            log_weights = np.zeros(N)
+            log_weights = np.log(np.ones(N))
         assert_array_shape(log_weights, ndim=1, dims={0: N})
         
-        # first update: use first of X and log_weights
+        # first update: use first of X and log_weights, and then discard
         if self.log_sum_weights is None:
+            # assume have observed fake terms, which is needed for making the system well-posed
+            # the L_C says that the fake terms had covariance self.lmbda, which is a regulariser
+            self.L_C = np.eye(self.m) * np.sqrt(self.lmbda)
             self.log_sum_weights = log_weights[0]
             self.b = compute_b(X[0].reshape(1, self.D), self.omega, self.u)
+            self.n = 1
+            
+            X = X[1:]
+            log_weights = log_weights[1:]
+            N -= 1
+            
+        # dont do anything if no data observed
+        if N == 0:
+            return
         
         old_L_C = np.array(self.L_C, copy=True)
         self.b, self.L_C = update_b_L_C_weighted(X, self.b, self.L_C,
@@ -199,12 +240,12 @@ class KernelExpFiniteGaussian(EstimatorBase):
         
         if np.any(np.isnan(self.L_C)) or np.any(np.isinf(self.L_C)):
             logger.warning("Numerical error while updating Cholesky factor of C.\n"
-                         "Before update:\n%s\n"
-                         "After update:\n%s\n"
-                         "Updating data:\n%s\n"
-                         "Updating log weights:\n%s\n"
-                         % (str(old_L_C), str(self.L_C), str(X), str(log_weights))
-                         )
+                           "Before update:\n%s\n"
+                           "After update:\n%s\n"
+                           "Updating data:\n%s\n"
+                           "Updating log weights:\n%s\n"
+                           % (str(old_L_C), str(self.L_C), str(X), str(log_weights))
+                           )
             raise RuntimeError("Numerical error while updating Cholesky factor of C.")
         
         # update terms and weights
