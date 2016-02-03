@@ -42,7 +42,7 @@ if __name__ == '__main__':
         # oop interface for optimising and using results
         # objective is not put through log here, if it is, might want to bound away from zero
         bo = BayesOptSearch(est, X, param_bounds, objective_log=False, objective_log_bound=100,
-                            n_initial=5)
+                            num_initial_evaluations=5)
         
         # optimisation starts here, use results and apply to model
         best_params = bo.optimize(num_iter=5)
