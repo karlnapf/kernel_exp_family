@@ -25,7 +25,7 @@ def pdf_grid(Xs, Ys, est):
     
     return D, G
 
-def visualise_fit(est, X, Xs=None, Ys=None):
+def visualise_fit_2d(est, X, Xs=None, Ys=None):
     # visualise found fit
     plt.figure()
     if Xs is None:

@@ -2,7 +2,7 @@ from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch,\
     plot_bayesopt_model_1d
-from kernel_exp_family.examples.tools import visualise_fit
+from kernel_exp_family.examples.tools import visualise_fit_2d
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         est.set_parameters_from_dict(best_params)
         est.fit(X)
         
-        visualise_fit(est, X)
+        visualise_fit_2d(est, X)
         plt.suptitle("Original fit %s\nOptimised over: %s" % 
                  (str(est.get_parameters()), str(param_bounds)))
         if len(param_bounds) == 1:
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         est.set_parameters_from_dict(best_params)
         est.fit(X)
         
-        visualise_fit(est, X)
+        visualise_fit_2d(est, X)
         plt.suptitle("New fit %s\nOptimised over: %s" % 
                  (str(est.get_parameters()), str(param_bounds)))
         

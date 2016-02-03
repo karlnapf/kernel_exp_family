@@ -1,7 +1,7 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.lite.gaussian_low_rank import KernelExpLiteGaussianLowRank
-from kernel_exp_family.examples.tools import visualise_fit
+from kernel_exp_family.examples.tools import visualise_fit_2d
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         # score matching objective function (can be used for parameter tuning)
         print est.objective(X)
         
-        visualise_fit(est, X)
+        visualise_fit_2d(est, X)
         plt.suptitle("Estimated with %s" % str(est.__class__.__name__))
     
     plt.show()

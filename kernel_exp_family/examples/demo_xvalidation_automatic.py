@@ -1,6 +1,6 @@
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussianAdaptive
 from kernel_exp_family.estimators.parameter_search_bo import plot_bayesopt_model_1d
-from kernel_exp_family.examples.tools import visualise_fit
+from kernel_exp_family.examples.tools import visualise_fit_2d
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     plot_bayesopt_model_1d(est.bo)
     plt.title("Original fit")
     
-    visualise_fit(est, X)
+    visualise_fit_2d(est, X)
     plt.suptitle("Original fit")
     
     # now change data, with different length scale
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # re-learns parameters, but starts from previous ones
     est.fit(X)
     
-    visualise_fit(est, X)
+    visualise_fit_2d(est, X)
     plt.suptitle("New fit")
     
     # only for illustration purpose

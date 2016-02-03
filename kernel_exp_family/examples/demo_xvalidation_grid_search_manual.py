@@ -1,5 +1,5 @@
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
-from kernel_exp_family.examples.tools import visualise_fit
+from kernel_exp_family.examples.tools import visualise_fit_2d
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -56,5 +56,5 @@ if __name__ == '__main__':
     
     est.sigma = np.exp(best_log_sigma)
     est.fit(X)
-    visualise_fit(est, X)
+    visualise_fit_2d(est, X)
     plt.show()
