@@ -194,14 +194,14 @@ class KernelExpLiteGaussian(EstimatorBase):
 
 class KernelExpLiteGaussianAdaptive(KernelExpLiteGaussian):
     def __init__(self, sigma, lmbda, D, N,
-                 n_initial=3, n_iter=3, minimum_size_learning=100,
+                 num_initial_evaluations=3, n_iter=3, minimum_size_learning=100,
                  n_initial_relearn=1, n_iter_relearn=1,
                  param_bounds={'sigma': [-3, 3]}):
         KernelExpLiteGaussian.__init__(self, sigma, lmbda, D, N)
         
         self.bo = None
         self.param_bounds = param_bounds
-        self.n_initial = n_initial
+        self.n_initial = num_initial_evaluations
         self.num_iter = n_iter
         self.minimum_size_learning = minimum_size_learning
         

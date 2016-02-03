@@ -39,13 +39,13 @@ class GPMean(Mean):
 
 class BayesOptSearch(object):
     def __init__(self, estimator, data, param_bounds, objective_log=False,
-                 objective_log_bound=1000, n_initial=6):
+                 objective_log_bound=1000, num_initial_evaluations=6):
         self.estimator = estimator
         self.data = data
         self.param_bounds = param_bounds
         self.objective_log = objective_log
         self.log_bound = objective_log_bound
-        self.n_initial = n_initial
+        self.n_initial = num_initial_evaluations
 
         # parameter space dimensions correspond to sorted parameter bound keys
         self.param_names = np.sort(param_bounds.keys())

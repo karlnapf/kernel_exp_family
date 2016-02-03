@@ -175,14 +175,14 @@ class KernelExpLiteGaussianLowRank(KernelExpLiteGaussian):
 
 class KernelExpLiteGaussianLowRankAdaptive(KernelExpLiteGaussianLowRank):
     def __init__(self, sigma, lmbda, D, N, eta=0.1, cg_tol=1e-3, cg_maxiter=None,
-                 n_initial=3, n_iter=3, minimum_size_learning=100,
+                 num_initial_evaluations=3, n_iter=3, minimum_size_learning=100,
                  n_initial_relearn=1, n_iter_relearn=1,
                  param_bounds={'sigma': [-3,3]}):
         KernelExpLiteGaussianLowRank.__init__(self, sigma, lmbda, D, N, eta, cg_tol, cg_maxiter)
         
         self.bo = None
         self.param_bounds = param_bounds
-        self.n_initial = n_initial
+        self.n_initial = num_initial_evaluations
         self.num_iter = n_iter
         self.minimum_size_learning = minimum_size_learning
         
