@@ -31,7 +31,7 @@ def update_mean_cov_L_lmbda(X, old_mean, old_cov_L, lmbdas):
     
     return mean, cov_L
 
-def weights_to_lmbdas(sum_old_weights, new_weights):
+def weights_to_lmbdas(sum_old_weights, new_weights, boundary_check_min_number=1e-5):
     N = len(new_weights)
     lmbdas = np.zeros(N)
     
@@ -39,9 +39,13 @@ def weights_to_lmbdas(sum_old_weights, new_weights):
         sum_old_weights += new_weight
         lmbdas[i] = new_weight / (sum_old_weights)
     
+    # numerical checks for lambdas. Must be in (0,1)
+    lmbdas[lmbdas < boundary_check_min_number] = boundary_check_min_number
+    lmbdas[(1 - lmbdas) < boundary_check_min_number] = 1 - boundary_check_min_number
+    
     return lmbdas
 
-def log_weights_to_lmbdas(log_sum_old_weights, log_new_weights):
+def log_weights_to_lmbdas(log_sum_old_weights, log_new_weights, boundary_check_min_number=1e-5):
     N = len(log_new_weights)
     lmbdas = np.zeros(N)
     
@@ -49,5 +53,9 @@ def log_weights_to_lmbdas(log_sum_old_weights, log_new_weights):
         log_sum_old_weights = log_sum_exp([log_sum_old_weights, log_new_weight])
         log_lmbda = log_new_weight - log_sum_old_weights
         lmbdas[i] = np.exp(log_lmbda)
+    
+    # numerical checks for lambdas. Must be in (0,1)
+    lmbdas[lmbdas < boundary_check_min_number] = boundary_check_min_number
+    lmbdas[(1 - lmbdas) < boundary_check_min_number] = 1 - boundary_check_min_number
     
     return lmbdas

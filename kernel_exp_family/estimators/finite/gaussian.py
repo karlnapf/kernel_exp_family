@@ -110,6 +110,9 @@ def objective(X, theta, omega, u, b=None, C=None):
     
     return 0.5 * np.dot(theta, np.dot(C, theta)) - np.dot(theta, b)
 
+def objective_L_C_precomputed(X, theta, omega, u, b, L_C):
+    return 0.5 * np.dot(theta, np.dot(L_C, np.dot(L_C.T, theta))) - np.dot(theta, b)
+
 def update_C(x, C, n, omega, u):
     D = omega.shape[0]
     assert x.ndim == 1
@@ -187,9 +190,10 @@ class KernelExpFiniteGaussian(EstimatorBase):
             # C so far consists of the average of N-1 terms
             # additional term is regulariser C (first in update_fit)
             # use Knuth online-update for new mean, which is average of N terms
-            C = (C * (N - 1) + np.eye(self.m) * self.lmbda) / N
-#             delta = np.eye(self.m) * self.lmbda - C
-#             C += delta / N
+            # effectively, this is equal to
+            # C = (C * (N - 1) + np.eye(self.m) * self.lmbda) / N
+            delta = np.eye(self.m) * self.lmbda - C
+            C += delta / N
             self.L_C = np.linalg.cholesky(C)
             
             # as all weights are equal, this corresponds to repeated update_fit calls
@@ -311,7 +315,7 @@ class KernelExpFiniteGaussian(EstimatorBase):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
         # note we need to recompute b and C here
-        return objective(X, self.theta, self.omega, self.u)
+        return objective_L_C_precomputed(X, self.theta, self.omega, self.u, self.b, self.L_C)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']
