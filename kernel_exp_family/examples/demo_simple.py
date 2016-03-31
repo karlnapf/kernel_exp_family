@@ -28,7 +28,7 @@ def get_KernelExpLiteGaussianLowRank_instance(D, N):
 
 def get_KernelExpFullGaussian_instance(D, N):
     # arbitrary choice of parameters here
-    sigma = 1.
+    sigma = 5.
     lmbda = 0.01
     return KernelExpFullGaussian(sigma, lmbda, D, N)
 
