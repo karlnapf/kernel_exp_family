@@ -158,7 +158,8 @@ class KernelExpFullGaussian(EstimatorBase):
         for a in range(self.N):
             x_a = self.X[a, :].reshape(-1, 1)
             xi += np.sum(SE_dx_dx_l(x.reshape(-1, 1), x_a)) / self.N
-            betasum = np.sum(SE_dx_l(x.reshape(-1, 1), x_a) * self.beta[a, :])
+            gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
+            betasum += gradient_x_xa.dot(self.beta[a, :])
         
         return self.alpha * xi + betasum
     
