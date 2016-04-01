@@ -2,8 +2,11 @@ from abc import abstractmethod
 
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
-import numpy as np
 
+try:
+    import autograd.numpy as np  # Thinly-wrapped numpy
+except ImportError:
+    import numpy as np
 
 def SE(x, y, l=2):
     # ASSUMES COLUMN VECTORS
@@ -39,6 +42,30 @@ def SE_dx_dx_dy_dy(x, y, l=2):
     term5 = SE_tmp * (1 + 2 * np.eye(x.size)) / l ** 4
     
     return term1 - term2 - term3 - term4 + term5
+
+
+def SE_dx_i_dx_j(x, y, l=2):
+    """ Matrix of \frac{\partial k}{\partial x_i \partial x_j}"""
+    pairwise_dist = (y-x).dot((y-x).T)
+
+    term1 = SE(x, y, l)*pairwise_dist/l**4
+    term2 = SE(x, y, l)*np.eye(pairwise_dist.shape[0])/l**2
+
+    return term1 - term2
+
+
+def SE_dx_i_dx_i_dx_j(x, y, l=2):
+    """ Matrix of \frac{\partial k}{\partial x_i^2 \partial x_j}"""
+    pairwise_dist_squared_i = ((y-x)**2).dot((y-x).T)
+    row_repeated_distances = np.repeat((y-x).T,
+                                       pairwise_dist_squared_i.shape[0],
+                                       axis=0)
+
+    term1 = SE(x, y, l)*pairwise_dist_squared_i/l**6
+    term2 = SE(x, y, l)*row_repeated_distances/l**4
+    term3 = term2*2*np.eye(pairwise_dist_squared_i.shape[0])
+
+    return term1 - term2 - term3
 
 def compute_h(kernel_dx_dx_dy, data):
     n, d = data.shape
@@ -162,11 +189,24 @@ class KernelExpFullGaussian(EstimatorBase):
             betasum += gradient_x_xa.dot(self.beta[a, :])
         
         return self.alpha * xi + betasum
-    
+
     def grad(self, x):
         assert_array_shape(x, ndim=1, dims={0: self.D})
-        return np.zeros(self.D)
-    
+
+        x = x.reshape(-1,1)
+        l = np.sqrt(np.float(self.sigma) / 2)
+
+        xi_grad = 0
+        betasum_grad = 0
+        for a in range(self.N):
+            x_a = self.X[a, :].reshape(-1, 1)
+
+            xi_grad += np.sum(SE_dx_i_dx_i_dx_j(x, x_a, l), axis=0) / self.N
+            left_arg_hessian = SE_dx_i_dx_j(x, x_a, l)
+            betasum_grad += self.beta[a, :].dot(left_arg_hessian)
+
+        return self.alpha * xi_grad + betasum_grad
+
     def log_pdf_multiple(self, X):
         return np.array([self.log_pdf(x) for x in X])
     
