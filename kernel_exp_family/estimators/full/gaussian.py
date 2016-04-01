@@ -174,7 +174,8 @@ class KernelExpFullGaussian(EstimatorBase):
         self.alpha, self.beta = fit(self.X, self.sigma, self.lmbda)
     
     def log_pdf(self, x):
-        assert_array_shape(x, ndim=1, dims={0: self.D})
+        # Temporarily disabled
+        # assert_array_shape(x, ndim=1, dims={0: self.D})
         
         l = np.sqrt(np.float(self.sigma) / 2)
         SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
@@ -186,7 +187,7 @@ class KernelExpFullGaussian(EstimatorBase):
             x_a = self.X[a, :].reshape(-1, 1)
             xi += np.sum(SE_dx_dx_l(x.reshape(-1, 1), x_a)) / self.N
             gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
-            betasum += gradient_x_xa.dot(self.beta[a, :])
+            betasum += np.dot(gradient_x_xa, self.beta[a, :])
         
         return self.alpha * xi + betasum
 

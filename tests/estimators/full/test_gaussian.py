@@ -4,7 +4,7 @@ from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian
 
 import autograd.numpy as np  # Thinly-wrapped numpy
-from autograd import hessian
+from autograd import hessian, grad
 
 
 def test_SE_dx_i_dx_j():
@@ -40,8 +40,7 @@ def test_SE_dx_i_dx_i_dx_j():
 
     assert_close(derivative_matrix, autograd_result)
 
-
-def test_grad_execute():
+def test_grad():
     sigma = 1.
     lmbda = 1.
     N = 10
@@ -51,4 +50,11 @@ def test_grad_execute():
     X = np.random.randn(N, D)
     est.fit(X)
 
-    est.grad(np.random.randn(D))
+    auto_gradient = grad(est.log_pdf)
+
+    x_new = np.random.randn(D)
+
+    # print(est.grad(x_new))
+    # print(auto_gradient(x_new))
+
+    assert_close(est.grad(x_new), auto_gradient(x_new))
