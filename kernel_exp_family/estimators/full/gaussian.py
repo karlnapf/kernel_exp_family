@@ -100,8 +100,8 @@ def compute_xi_norm_2(kernel_dx_dx_dy_dy, data):
             
     return norm_2 / n ** 2
 
-def fit(X, sigma, lmbda):
-    # esben parametrised kernel in terms of l as exp(-||---|| / (2*l^2)
+def build_system(X, sigma, lmbda):
+        # esben parametrised kernel in terms of l as exp(-||---|| / (2*l^2)
     # therefore sigma = 2*(l**2)
     l = np.sqrt(np.float(sigma) / 2)
     
@@ -140,6 +140,10 @@ def fit(X, sigma, lmbda):
         for i in range(d):
             b[1 + a * d + i] = -h[a, i]
             
+    return A, b
+
+def fit(X, sigma, lmbda):
+    A, b = build_system(X, sigma, lmbda)
     x = np.linalg.solve(A, b)
     alpha = x[0]
     beta = x[1:].reshape(n, d)
