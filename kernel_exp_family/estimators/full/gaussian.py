@@ -143,6 +143,7 @@ def build_system(X, sigma, lmbda):
     return A, b
 
 def fit(X, sigma, lmbda):
+    n, d = X.shape
     A, b = build_system(X, sigma, lmbda)
     x = np.linalg.solve(A, b)
     alpha = x[0]
