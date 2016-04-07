@@ -2,11 +2,29 @@ from numpy.ma.testutils import assert_close
 
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
-    build_system_fast
+    build_system_fast, SE_dx_dy, compute_lower_right_submatrix, compute_RHS, \
+    SE_dx_dx_dy
+from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
+    compute_RHS_loop
 
 import autograd.numpy as np  # Thinly-wrapped numpy
 from autograd import hessian, grad
-from Cython.Compiler.Main import verbose
+
+def setup():
+    """ Generates some data and parameters """
+    sigma = np.random.randn()**2
+    l = np.sqrt(np.float(sigma) / 2)
+    lmbda = np.random.randn()**2
+    N = 10
+    D = 2
+
+    mean = np.random.randn(D)
+    cov = np.random.rand(D,D)
+    cov = np.dot(cov,cov.T)
+
+    data = np.random.multivariate_normal(mean, cov, size=N)
+
+    return data, l, sigma, lmbda
 
 
 def test_SE_dx_i_dx_j():
@@ -62,16 +80,33 @@ def test_grad():
     assert_close(est.grad(x_new), auto_gradient(x_new))
 
 def test_build_system_old_new():
-    sigma = 1.
-    lmbda = 1.
-    N = 10
-    D = 2
+    data, _, sigma, lmbda  = setup()
 
-    X = np.random.multivariate_normal([10.0, -4.0], [[2.0,2.0],[2.0,2.0]], size=N)
+    A_new, b_new = build_system_fast(data, sigma, lmbda)
 
-    A_new, b_new = build_system_fast(X, sigma, lmbda)
-
-    A_old, b_old = build_system(X, sigma, lmbda)
+    A_old, b_old = build_system(data, sigma, lmbda)
 
     assert_close(A_new, A_old, verbose=True)
     assert_close(b_new, b_old)
+
+def test_compute_lower_submatrix():
+    data, l, _, lmbda  = setup()
+
+    kernel_dx_dy = lambda x,y: SE_dx_dy(x, y, l)
+
+    A_loop = compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda)
+    A_vector = compute_lower_right_submatrix(kernel_dx_dy, data, lmbda)
+
+    assert_close(A_loop, A_vector)
+
+def test_compute_RHS_vector():
+    data, l, _, _  = setup()
+
+    xi_norm_2 = np.random.randn()
+
+    kernel_dx_dx_dy = lambda x,y: SE_dx_dx_dy(x,y,l)
+
+    rhs_vector = compute_RHS(kernel_dx_dx_dy, data, xi_norm_2)
+    rhs_loop = compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2)
+
+    assert_close(rhs_vector, rhs_loop)
