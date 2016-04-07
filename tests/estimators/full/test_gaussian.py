@@ -3,7 +3,7 @@ from numpy.ma.testutils import assert_close
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
     build_system_fast, SE_dx_dy, compute_lower_right_submatrix, compute_RHS, \
-    SE_dx_dx_dy
+    SE_dx_dx_dy, build_system_even_faster
 from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
     compute_RHS_loop
 
@@ -110,3 +110,13 @@ def test_compute_RHS_vector():
     rhs_loop = compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2)
 
     assert_close(rhs_vector, rhs_loop)
+
+def test_build_system_even_fast():
+    data, _, sigma, lmbda  = setup()
+    
+    A_new, b_new = build_system_even_faster(data, sigma, lmbda)
+
+    A_old, b_old = build_system_fast(data, sigma, lmbda)
+
+    assert_close(A_new, A_old, verbose=True)
+    assert_close(b_new, np.squeeze(b_old.T))

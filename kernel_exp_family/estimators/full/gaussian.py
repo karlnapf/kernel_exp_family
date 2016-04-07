@@ -87,6 +87,20 @@ def compute_G(kernel_dx_dy, data):
             
     return G
 
+def compute_all_hessians(kernel_dx_dy, data):
+    n,d = data.shape
+    all_hessians = np.zeros( (n*d, n*d) )
+
+    for a, x_a in enumerate(data):
+        for b, x_b in enumerate(data[0:a+1,:]):
+            r_start,r_end = a*d, a*d+d
+            c_start, c_end = b*d, b*d+d
+            all_hessians[r_start:r_end, c_start:c_end] = kernel_dx_dy(x_a.reshape(-1, 1),
+                                                                      x_b.reshape(-1, 1))
+            all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
+
+    return all_hessians
+
 def compute_lower_right_submatrix(kernel_dx_dy, data, lmbda):
     n, d = data.shape
     all_hessians = np.zeros( (n*d, n*d) )
@@ -201,6 +215,32 @@ def build_system_fast(X, sigma, lmbda):
     for a in range(n):
         b[1 + a * d : 1 + a*d + d] = -h[a, :].reshape(-1, 1)
 
+    return A, b
+
+def build_system_even_faster(X, sigma, lmbda):
+    l = np.sqrt(np.float(sigma) / 2)
+    
+    n, d = X.shape
+
+    SE_dx_dx_dy_l = lambda x, y: SE_dx_dx_dy(x, y, l)
+    SE_dx_dy_l = lambda x, y: SE_dx_dy(x, y, l)
+    SE_dx_dx_dy_dy_l = lambda x, y: SE_dx_dx_dy_dy(x, y, l)
+    
+    h = compute_h(SE_dx_dx_dy_l, X).reshape(-1)
+    all_hessians = compute_all_hessians(SE_dx_dy_l, X)
+    xi_norm_2 = compute_xi_norm_2(SE_dx_dx_dy_dy_l, X)
+    
+    A = np.zeros((n * d + 1, n * d + 1))
+    A[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
+    A[1:, 1:] = np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
+    
+    A[0, 1:] = np.dot(h, all_hessians)/n + lmbda*h
+    A[1:, 0] = A[0,1:]
+    
+    b = np.zeros(n*d + 1)
+    b[0] = -xi_norm_2
+    b[1:] = -h
+    
     return A, b
 
 def fit(X, sigma, lmbda):
