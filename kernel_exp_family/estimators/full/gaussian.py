@@ -91,15 +91,29 @@ def compute_lower_right_submatrix(kernel_dx_dy, data, lmbda):
     n, d = data.shape
     all_hessians = np.zeros( (n*d, n*d) )
 
-    for a in range(n):
-        for b in range(n):
-            x = data[a, :].reshape(-1, 1)
-            y = data[b, :].reshape(-1, 1)
-            all_hessians[a*d:a*d+d, b*d:b*d+d] = kernel_dx_dy(x, y)
+    for a, x_a in enumerate(data):
+        for b, x_b in enumerate(data[0:a+1,:]):
+            r_start,r_end = a*d, a*d+d
+            c_start, c_end = b*d, b*d+d
+            all_hessians[r_start:r_end, c_start:c_end] = kernel_dx_dy(x_a.reshape(-1, 1),
+                                                                      x_b.reshape(-1, 1))
+            all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
 
     return np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
 
-# compute_G(SE_dx_dy, test)
+def compute_RHS(kernel_dx_dx_dy, data, xi_norm_2):
+    n,d = data.shape
+
+    b = np.zeros((n * d + 1, 1))
+    b[0] = -xi_norm_2
+
+    h = compute_h(kernel_dx_dx_dy, data)
+    b[1:] = -h.reshape(-1,1)
+
+    return b
+
+
+
 
 def compute_xi_norm_2(kernel_dx_dx_dy_dy, data):
     n, _ = data.shape
