@@ -1,10 +1,12 @@
 from numpy.ma.testutils import assert_close
 
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
-    SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian
+    SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
+    build_system_fast
 
 import autograd.numpy as np  # Thinly-wrapped numpy
 from autograd import hessian, grad
+from Cython.Compiler.Main import verbose
 
 
 def test_SE_dx_i_dx_j():
@@ -58,3 +60,18 @@ def test_grad():
     # print(auto_gradient(x_new))
 
     assert_close(est.grad(x_new), auto_gradient(x_new))
+
+def test_build_system_old_new():
+    sigma = 1.
+    lmbda = 1.
+    N = 10
+    D = 2
+
+    X = np.random.multivariate_normal([10.0, -4.0], [[2.0,2.0],[2.0,2.0]], size=N)
+
+    A_new, b_new = build_system_fast(X, sigma, lmbda)
+
+    A_old, b_old = build_system(X, sigma, lmbda)
+
+    assert_close(A_new, A_old, verbose=True)
+    assert_close(b_new, b_old)
