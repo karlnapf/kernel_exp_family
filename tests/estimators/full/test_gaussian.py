@@ -3,11 +3,13 @@ from numpy.ma.testutils import assert_close
 import numpy as np
 
 from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
-    compute_RHS_loop, log_pdf_naive, build_system_fast, build_system_loop
+    compute_RHS_loop, log_pdf_naive, build_system_fast, build_system_loop, \
+    compute_lower_right_submatrix_old
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
-    SE_dx_dy, compute_lower_right_submatrix, compute_RHS, SE_dx_dx_dy, log_pdf
-
+    SE_dx_dy, compute_RHS, SE_dx_dx_dy, log_pdf, compute_lower_right_submatrix,\
+    compute_h
+from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 
 def setup():
     """ Generates some data and parameters """
@@ -49,12 +51,14 @@ def test_build_system_loop_equals_implementation():
 
 
 def test_compute_lower_submatrix():
-    data, l, _, lmbda  = setup()
+    data, l, sigma, lmbda  = setup()
 
     kernel_dx_dy = lambda x,y: SE_dx_dy(x, y, l)
 
     A_loop = compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda)
-    A_vector = compute_lower_right_submatrix(kernel_dx_dy, data, lmbda)
+
+    all_hessians = gaussian_kernel_hessians(data, sigma=sigma)
+    A_vector = compute_lower_right_submatrix(all_hessians, data.shape[0], lmbda)
 
     assert_close(A_loop, A_vector)
 
@@ -65,10 +69,11 @@ def test_compute_RHS_vector():
 
     kernel_dx_dx_dy = lambda x,y: SE_dx_dx_dy(x,y,l)
 
-    rhs_vector = compute_RHS(kernel_dx_dx_dy, data, xi_norm_2)
+    h = compute_h(kernel_dx_dx_dy, data)
+    rhs_vector = compute_RHS(h, xi_norm_2)
     rhs_loop = compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2)
 
-    assert_close(rhs_vector, rhs_loop)
+    assert_close(rhs_vector, np.squeeze(rhs_loop.T))
 
 
 def test_log_pdf_equals_log_pdf_naive():

@@ -1,5 +1,5 @@
-from kernel_exp_family.estimators.full.gaussian import compute_G, compute_h, \
-    compute_xi_norm_2, compute_lower_right_submatrix
+from kernel_exp_family.estimators.full.gaussian import compute_h, \
+    compute_xi_norm_2
 from kernel_exp_family.kernels.develop.kernels import SE_dx_dx_dy, SE_dx_dy, \
     SE_dx_dx, SE_dx, SE_dx_dx_dy_dy
 import numpy as np
@@ -36,6 +36,33 @@ def compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda):
                     A[b * d + j, a * d + i] = np.sum(G[a, :, i, :] * G[:, b, :, j]) / n + lmbda * G[a, b, i, j]
 
     return A
+
+
+def compute_G(kernel_dx_dy, data):
+    n, d = data.shape
+    G = np.zeros((n, n, d, d))
+    for a in range(n):
+        for b in range(n):
+            x = data[a, :].reshape(-1, 1)
+            y = data[b, :].reshape(-1, 1)
+            G[a, b, :, :] = kernel_dx_dy(x, y)
+
+    return G
+
+
+def compute_lower_right_submatrix_old(kernel_dx_dy, data, lmbda):
+    n, d = data.shape
+    all_hessians = np.zeros( (n*d, n*d) )
+
+    for a, x_a in enumerate(data):
+        for b, x_b in enumerate(data[0:a+1,:]):
+            r_start,r_end = a*d, a*d+d
+            c_start, c_end = b*d, b*d+d
+            all_hessians[r_start:r_end, c_start:c_end] = kernel_dx_dy(x_a.reshape(-1, 1),
+                                                                      x_b.reshape(-1, 1))
+            all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
+
+    return np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
 
 def compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2):
     n, d = data.shape
@@ -117,7 +144,7 @@ def build_system_fast(X, sigma, lmbda):
             A[1 + b * d + j, 0] = A[0, 1 + b * d + j]
 
     # All other elements - (n*d)x(n*d) lower right submatrix
-    A[1:, 1:] = compute_lower_right_submatrix(SE_dx_dy_l, X, lmbda)
+    A[1:, 1:] = compute_lower_right_submatrix_old(SE_dx_dy_l, X, lmbda)
 
     b = np.zeros((n * d + 1, 1))
 

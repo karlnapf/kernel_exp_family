@@ -74,39 +74,17 @@ def compute_h(kernel_dx_dx_dy, data):
             
     return h / n
 
-def compute_G(kernel_dx_dy, data):
-    n, d = data.shape
-    G = np.zeros((n, n, d, d))
-    for a in range(n):
-        for b in range(n):
-            x = data[a, :].reshape(-1, 1)
-            y = data[b, :].reshape(-1, 1)
-            G[a, b, :, :] = kernel_dx_dy(x, y)
-            
-    return G
 
-def compute_lower_right_submatrix(kernel_dx_dy, data, lmbda):
-    n, d = data.shape
-    all_hessians = np.zeros( (n*d, n*d) )
+def compute_lower_right_submatrix(all_hessians, N, lmbda):
+    return np.dot(all_hessians,all_hessians)/N + lmbda*all_hessians
 
-    for a, x_a in enumerate(data):
-        for b, x_b in enumerate(data[0:a+1,:]):
-            r_start,r_end = a*d, a*d+d
-            c_start, c_end = b*d, b*d+d
-            all_hessians[r_start:r_end, c_start:c_end] = kernel_dx_dy(x_a.reshape(-1, 1),
-                                                                      x_b.reshape(-1, 1))
-            all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
+def compute_first_row(h, all_hessians, n, lmbda):
+    return np.dot(h, all_hessians)/n + lmbda*h
 
-    return np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
-
-def compute_RHS(kernel_dx_dx_dy, data, xi_norm_2):
-    n,d = data.shape
-
-    b = np.zeros((n * d + 1, 1))
+def compute_RHS(h, xi_norm_2):
+    b = np.zeros(h.size+1)
     b[0] = -xi_norm_2
-
-    h = compute_h(kernel_dx_dx_dy, data)
-    b[1:] = -h.reshape(-1,1)
+    b[1:] = -h.reshape(-1)
 
     return b
 
@@ -136,14 +114,12 @@ def build_system(X, sigma, lmbda):
     
     A = np.zeros((n * d + 1, n * d + 1))
     A[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
-    A[1:, 1:] = np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
+    A[1:, 1:] = compute_lower_right_submatrix(all_hessians, n, lmbda)
     
-    A[0, 1:] = np.dot(h, all_hessians)/n + lmbda*h
+    A[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
     A[1:, 0] = A[0,1:]
     
-    b = np.zeros(n*d + 1)
-    b[0] = -xi_norm_2
-    b[1:] = -h
+    b = compute_RHS(h, xi_norm_2)
     
     return A, b
 
