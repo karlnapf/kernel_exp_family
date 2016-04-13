@@ -204,7 +204,7 @@ def gaussian_kernel_dx_i_dx_j(x, y, sigma=1.):
 
 def gaussian_kernel_dx_i_dx_i_dx_j(x, y, sigma=1.):
     """ Matrix of \frac{\partial k}{\partial x_i^2 \partial x_j}"""
-    assert(len(x.shape) == 1)
+    assert(len(x.shape) == 1), x
     assert(len(y.shape) == 1)
     d = x.size
     
