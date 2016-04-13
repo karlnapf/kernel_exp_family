@@ -18,7 +18,7 @@ def log_pdf_naive(x, X, sigma, alpha, beta):
         xi_grad = SE_dx_dx_l(x.reshape(-1, 1), x_a)
         for i in range(D):
             xi += xi_grad[i] / N
-            betasum += gradient_x_xa[i], beta[a, i]
+            betasum += gradient_x_xa[i] * beta[a, i]
     
     return alpha * xi + betasum
 

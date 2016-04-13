@@ -122,7 +122,7 @@ def test_build_system_even_fast():
     assert_close(A_new, A_old, verbose=True)
     assert_close(b_new, np.squeeze(b_old.T))
 
-def log_pdf_equals_log_pdf_naive():
+def test_log_pdf_equals_log_pdf_naive():
     N=10
     D=2
     X = np.random.randn(N,D)
