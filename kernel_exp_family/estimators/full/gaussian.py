@@ -4,10 +4,7 @@ from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 
-try:
-    import autograd.numpy as np  # Thinly-wrapped numpy
-except ImportError:
-    import numpy as np
+import numpy as np
 
 def SE(x, y, l=2):
     # ASSUMES COLUMN VECTORS
@@ -152,14 +149,15 @@ def build_system(X, sigma, lmbda):
 
 def fit(X, sigma, lmbda):
     n, d = X.shape
-    A, b = build_system_even_faster(X, sigma, lmbda)
+    A, b = build_system(X, sigma, lmbda)
     x = np.linalg.solve(A, b)
     alpha = x[0]
     beta = x[1:].reshape(n, d)
     return alpha, beta
 
 def log_pdf(x, X, sigma, alpha, beta):
-    # assert_array_shape(x, ndim=1, dims={0: self.D})
+    _, D = X.shape
+    assert_array_shape(x, ndim=1, dims={0: D})
     N = len(X)
     
     l = np.sqrt(np.float(sigma) / 2)
