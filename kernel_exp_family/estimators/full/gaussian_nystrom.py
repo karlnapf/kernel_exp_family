@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.gaussian import build_system_even_faster, \
+from kernel_exp_family.estimators.full.gaussian import build_system, \
     SE_dx_dx, SE_dx, SE_dx_i_dx_i_dx_j, SE_dx_i_dx_j
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
@@ -13,7 +13,7 @@ def get_nystrom_inds(X, basis_size):
     return inds
 
 def nystrom(X, sigma, lmbda, inds):
-    A, b = build_system_even_faster(X, sigma, lmbda)
+    A, b = build_system(X, sigma, lmbda)
     
     inds_with_xi = np.zeros(len(inds)+1)
     inds_with_xi[1:] = inds+1
