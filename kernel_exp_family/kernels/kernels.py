@@ -141,6 +141,87 @@ def gaussian_kernel_hessians(X, Y=None, sigma=1.0):
 
     return all_hessians
 
+
+def gaussian_kernel_dx_dx(x, Y, sigma=1.):
+    assert(len(x.shape) == 1)
+    assert(len(Y.shape) == 2)
+    assert(len(x) == Y.shape[1])
+
+    x_2d = x[np.newaxis, :]
+    k = gaussian_kernel(x_2d, Y, sigma)
+    sq_differences = (Y - x)**2
+    return k.T * (sq_differences*(2.0 / sigma)**2 - 2.0/sigma)
+
+
+def gaussian_kernel_dx_dx_dy(x, y, sigma=1.):
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+    term1 = k * np.outer((x - y) ** 2, (x - y)) * (2/sigma)**3
+    term2 = k * 2 * np.diag((x - y)) * (2/sigma)**2
+    term3 = k * np.tile((x - y), [d,1]) * (2/sigma)**2
+    return term1 - term2 - term3
+
+
+def gaussian_kernel_dx_dx_dy_dy(x, y, sigma=1.):
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+    
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+    term1 = k * np.outer((x - y), (x - y)) ** 2 * (2.0/sigma)**4
+    term2 = k * 6 * np.diag((x - y) ** 2) * (2.0/sigma)**3  # diagonal (x-y)
+    term3 = (1 - np.eye(d)) * k * np.tile((x - y), [d, 1]).T ** 2 * (2.0/sigma)**3  # (x_i-y_i)^2 off-diagonal 
+    term5 = k * (1 + 2 * np.eye(d)) * (2.0/sigma)**2
+    
+    return term1 - term2 - term3 - term3.T + term5
+
+
+def gaussian_kernel_dx_i_dx_j(x, y, sigma=1.):
+    """ Matrix of \frac{\partial k}{\partial x_i \partial x_j}"""
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+
+    pairwise_dist = np.outer(y-x, y-x)
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+    term1 = k*pairwise_dist * (2.0/sigma)**2
+    term2 = k*np.eye(d) * (2.0/sigma)
+
+    return term1 - term2
+
+
+def gaussian_kernel_dx_i_dx_i_dx_j(x, y, sigma=1.):
+    """ Matrix of \frac{\partial k}{\partial x_i^2 \partial x_j}"""
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+    
+    pairwise_dist_squared_i = np.outer((y-x)**2, y-x)
+    row_repeated_distances = np.tile(y-x, [d,1])
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+
+    term1 = k*pairwise_dist_squared_i * (2.0/sigma)**3
+    term2 = k*row_repeated_distances * (2.0/sigma)**2
+    term3 = term2*2*np.eye(d)
+
+    return term1 - term2 - term3
+
+
 def rff_sample_basis(D, m, sigma):
     # rbf sampler is parametrised in gamma, which is at the same time
     # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
