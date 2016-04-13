@@ -112,6 +112,35 @@ def gaussian_kernel_hessian(x, y, sigma=1.):
     H = k*(2*np.eye(d)/sigma - 4*np.outer(differences, differences)/sigma**2)
     return H
 
+def gaussian_kernel_hessians(X, Y=None, sigma=1.0):
+    assert(len(X.shape) == 2)
+
+    N_x, d = X.shape
+    all_hessians = None
+
+    if Y is None:
+        all_hessians = np.zeros( (N_x*d, N_x*d) )
+
+        for a, x_a in enumerate(X):
+            for b, x_b in enumerate(X[0:a+1,:]):
+                r_start,r_end = a*d, a*d+d
+                c_start, c_end = b*d, b*d+d
+                all_hessians[r_start:r_end, c_start:c_end] = gaussian_kernel_hessian(x_a, x_b, sigma)
+                all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
+
+    else:
+        assert(len(Y.shape) == 2)
+        assert(X.shape[1] == Y.shape[1])
+
+        N_y = Y.shape[0]
+        all_hessians = np.zeros( (N_x*d, N_y*d) )
+
+        for a, x_a in enumerate(X):
+            for b, y_b in enumerate(Y):
+                all_hessians[a*d:a*d+d, b*d:b*d+d] = gaussian_kernel_hessian(x_a, y_b, sigma)
+
+    return all_hessians
+
 def rff_sample_basis(D, m, sigma):
     # rbf sampler is parametrised in gamma, which is at the same time
     # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density

@@ -4,12 +4,12 @@ from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.kernels.develop.kernels import rff_feature_map_grad_loop, \
-    rff_feature_map_grad2_loop, SE_dx_dy
+    rff_feature_map_grad2_loop, SE_dx_dy, compute_all_hessians_old
 from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel, \
     gaussian_kernel_grad, rff_feature_map_single, rff_feature_map, \
     rff_feature_map_grad_d, rff_feature_map_grad2_d, rff_feature_map_grad, \
     rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis, \
-    gaussian_kernel_hessian
+    gaussian_kernel_hessian, gaussian_kernel_hessians
 
 import numpy as np
 
@@ -310,3 +310,27 @@ def test_gaussian_kernel_hessian_equals_SE_dx_dy():
     H_old = SE_dx_dy(x.reshape(-1,1), y.reshape(-1,1), np.sqrt(sigma / 2.0))
 
     assert_close(H_new,H_old)
+
+def test_gaussian_kernel_hessians_equals_old():
+    D = 3
+    N = 20
+    X = np.random.randn(N,D)
+    sigma = 0.5
+
+    hessians_new = gaussian_kernel_hessians(X,sigma=sigma)
+
+    kernel_dx_dy = lambda x, y: SE_dx_dy(x, y, l=np.sqrt(sigma / 2.0))
+    hessians_old = compute_all_hessians_old(kernel_dx_dy, X)
+
+    assert_close(hessians_new,hessians_old)
+
+def test_gaussian_kernel_hessians_non_symmetric_execute():
+    D = 3
+    N_x = 20
+    N_y = 10
+
+    X = np.random.randn(N_x,D)
+    Y = np.random.randn(N_y,D)
+    sigma = 0.5
+
+    gaussian_kernel_hessians(X, Y, sigma)
