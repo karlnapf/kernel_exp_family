@@ -245,7 +245,7 @@ def build_system_even_faster(X, sigma, lmbda):
 
 def fit(X, sigma, lmbda):
     n, d = X.shape
-    A, b = build_system(X, sigma, lmbda)
+    A, b = build_system_even_faster(X, sigma, lmbda)
     x = np.linalg.solve(A, b)
     alpha = x[0]
     beta = x[1:].reshape(n, d)
@@ -267,7 +267,7 @@ def log_pdf(x, X, sigma, alpha, beta):
         gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
         betasum += np.dot(gradient_x_xa, beta[a, :])
     
-    return alpha * xi + betasum
+    return np.float(alpha * xi + betasum)
 
 def grad(x, X, sigma, alpha, beta):
     N, D = X.shape
