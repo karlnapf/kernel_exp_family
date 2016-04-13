@@ -1,14 +1,15 @@
+from autograd import hessian, grad
+from nose.tools import assert_almost_equal
 from numpy.ma.testutils import assert_close
 
+import autograd.numpy as np  # Thinly-wrapped numpy
+from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
+    compute_RHS_loop, log_pdf_naive
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
     build_system_fast, SE_dx_dy, compute_lower_right_submatrix, compute_RHS, \
-    SE_dx_dx_dy, build_system_even_faster
-from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
-    compute_RHS_loop
+    SE_dx_dx_dy, build_system_even_faster, log_pdf
 
-import autograd.numpy as np  # Thinly-wrapped numpy
-from autograd import hessian, grad
 
 def setup():
     """ Generates some data and parameters """
@@ -120,3 +121,17 @@ def test_build_system_even_fast():
 
     assert_close(A_new, A_old, verbose=True)
     assert_close(b_new, np.squeeze(b_old.T))
+
+def log_pdf_equals_log_pdf_naive():
+    N=10
+    D=2
+    X = np.random.randn(N,D)
+    x = np.random.randn(D)
+    sigma = 1.
+    alpha = np.random.randn()
+    beta = np.random.randn(N,D)
+    
+    a = log_pdf(x, X, sigma, alpha, beta)
+    b = log_pdf_naive(x, X, sigma, alpha, beta)
+    
+    assert_almost_equal(a,b)

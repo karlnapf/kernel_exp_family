@@ -1,9 +1,26 @@
+from kernel_exp_family.estimators.full.gaussian import compute_G, compute_h,\
+    SE_dx_dx, SE_dx
 import numpy as np
 
-from kernel_exp_family.estimators.full.gaussian import compute_G, compute_h
 
-
-
+def log_pdf_naive(x, X, sigma, alpha, beta):
+    N, D = X.shape
+    
+    l = np.sqrt(np.float(sigma) / 2)
+    SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
+    SE_dx_l = lambda x, y: SE_dx(x, y, l)
+    
+    xi = 0
+    betasum = 0
+    for a in range(N):
+        x_a = X[a, :].reshape(-1, 1)
+        gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
+        xi_grad = SE_dx_dx_l(x.reshape(-1, 1), x_a)
+        for i in range(D):
+            xi += xi_grad[i] / N
+            betasum += gradient_x_xa[i], beta[a, i]
+    
+    return alpha * xi + betasum
 
 def compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda):
     n, d = data.shape
