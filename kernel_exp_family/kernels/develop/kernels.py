@@ -29,3 +29,14 @@ def rff_feature_map_grad2_loop(X, omega, u):
         projections[d, :, :] *= omega[d, :] ** 2
         
     return projections
+
+def SE(x, y, l=2):
+    # ASSUMES COLUMN VECTORS
+    diff = x - y;
+    return np.squeeze(np.exp(-np.dot(diff.T, diff) / (2 * l ** 2)))
+
+def SE_dx_dy(x, y, l=2):
+    SE_tmp = SE(x, y, l)
+    term1 = SE_tmp * np.eye(x.size) / l ** 2
+    term2 = SE_tmp * np.dot((x - y), (x - y).T) / l ** 4
+    return term1 - term2

@@ -4,11 +4,12 @@ from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.kernels.develop.kernels import rff_feature_map_grad_loop, \
-    rff_feature_map_grad2_loop
+    rff_feature_map_grad2_loop, SE_dx_dy
 from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel, \
     gaussian_kernel_grad, rff_feature_map_single, rff_feature_map, \
     rff_feature_map_grad_d, rff_feature_map_grad2_d, rff_feature_map_grad, \
-    rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis
+    rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis, \
+    gaussian_kernel_hessian
 
 import numpy as np
 
@@ -298,3 +299,14 @@ def test_rff_feature_map_third_order_tensor_theano_execute():
     
     for i in range(m):
         rff_feature_map_comp_third_order_tensor_theano(x, omega[:, i], u[i])
+
+def test_gaussian_kernel_hessian_equals_SE_dx_dy():
+    D = 2
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    H_new = gaussian_kernel_hessian(x,y,sigma)
+    H_old = SE_dx_dy(x.reshape(-1,1), y.reshape(-1,1), np.sqrt(sigma / 2.0))
+
+    assert_close(H_new,H_old)
