@@ -262,7 +262,7 @@ def log_pdf(x, X, sigma, alpha, beta):
     xi = 0
     betasum = 0
     for a in range(N):
-        x_a = self.X[a, :].reshape(-1, 1)
+        x_a = X[a, :].reshape(-1, 1)
         xi += np.sum(SE_dx_dx_l(x.reshape(-1, 1), x_a)) / N
         gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
         betasum += np.dot(gradient_x_xa, beta[a, :])
@@ -279,11 +279,11 @@ def grad(x, X, sigma, alpha, beta):
     xi_grad = 0
     betasum_grad = 0
     for a in range(N):
-        x_a = self.X[a, :].reshape(-1, 1)
+        x_a = X[a, :].reshape(-1, 1)
 
         xi_grad += np.sum(SE_dx_i_dx_i_dx_j(x, x_a, l), axis=0) / N
         left_arg_hessian = SE_dx_i_dx_j(x, x_a, l)
-        betasum_grad += self.beta[a, :].dot(left_arg_hessian)
+        betasum_grad += beta[a, :].dot(left_arg_hessian)
 
     return alpha * xi_grad + betasum_grad
 
