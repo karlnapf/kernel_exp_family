@@ -251,6 +251,42 @@ def fit(X, sigma, lmbda):
     beta = x[1:].reshape(n, d)
     return alpha, beta
 
+def log_pdf(x, X, sigma, alpha, beta):
+    # assert_array_shape(x, ndim=1, dims={0: self.D})
+    N = len(X)
+    
+    l = np.sqrt(np.float(sigma) / 2)
+    SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
+    SE_dx_l = lambda x, y: SE_dx(x, y, l)
+    
+    xi = 0
+    betasum = 0
+    for a in range(N):
+        x_a = self.X[a, :].reshape(-1, 1)
+        xi += np.sum(SE_dx_dx_l(x.reshape(-1, 1), x_a)) / N
+        gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
+        betasum += np.dot(gradient_x_xa, beta[a, :])
+    
+    return alpha * xi + betasum
+
+def grad(x, X, sigma, alpha, beta):
+    N, D = X.shape
+    assert_array_shape(x, ndim=1, dims={0: D})
+    
+    x = x.reshape(-1,1)
+    l = np.sqrt(np.float(sigma) / 2)
+
+    xi_grad = 0
+    betasum_grad = 0
+    for a in range(N):
+        x_a = self.X[a, :].reshape(-1, 1)
+
+        xi_grad += np.sum(SE_dx_i_dx_i_dx_j(x, x_a, l), axis=0) / N
+        left_arg_hessian = SE_dx_i_dx_j(x, x_a, l)
+        betasum_grad += self.beta[a, :].dot(left_arg_hessian)
+
+    return alpha * xi_grad + betasum_grad
+
 class KernelExpFullGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, D, N):
         self.sigma = sigma
@@ -280,39 +316,10 @@ class KernelExpFullGaussian(EstimatorBase):
         self.alpha, self.beta = fit(self.X, self.sigma, self.lmbda)
     
     def log_pdf(self, x):
-        # Temporarily disabled
-        # assert_array_shape(x, ndim=1, dims={0: self.D})
-        
-        l = np.sqrt(np.float(self.sigma) / 2)
-        SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
-        SE_dx_l = lambda x, y: SE_dx(x, y, l)
-        
-        xi = 0
-        betasum = 0
-        for a in range(self.N):
-            x_a = self.X[a, :].reshape(-1, 1)
-            xi += np.sum(SE_dx_dx_l(x.reshape(-1, 1), x_a)) / self.N
-            gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
-            betasum += np.dot(gradient_x_xa, self.beta[a, :])
-        
-        return self.alpha * xi + betasum
+        return log_pdf(x, self.X, self.sigma, self.alpha, self.beta)
 
     def grad(self, x):
-        assert_array_shape(x, ndim=1, dims={0: self.D})
-
-        x = x.reshape(-1,1)
-        l = np.sqrt(np.float(self.sigma) / 2)
-
-        xi_grad = 0
-        betasum_grad = 0
-        for a in range(self.N):
-            x_a = self.X[a, :].reshape(-1, 1)
-
-            xi_grad += np.sum(SE_dx_i_dx_i_dx_j(x, x_a, l), axis=0) / self.N
-            left_arg_hessian = SE_dx_i_dx_j(x, x_a, l)
-            betasum_grad += self.beta[a, :].dot(left_arg_hessian)
-
-        return self.alpha * xi_grad + betasum_grad
+        return grad(x, self.X, self.sigma, self.alpha, self.beta)
 
     def log_pdf_multiple(self, X):
         return np.array([self.log_pdf(x) for x in X])
