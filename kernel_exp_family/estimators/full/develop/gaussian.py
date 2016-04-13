@@ -50,27 +50,13 @@ def compute_G(kernel_dx_dy, data):
     return G
 
 
-def compute_lower_right_submatrix_old(kernel_dx_dy, data, lmbda):
-    n, d = data.shape
-    all_hessians = np.zeros( (n*d, n*d) )
-
-    for a, x_a in enumerate(data):
-        for b, x_b in enumerate(data[0:a+1,:]):
-            r_start,r_end = a*d, a*d+d
-            c_start, c_end = b*d, b*d+d
-            all_hessians[r_start:r_end, c_start:c_end] = kernel_dx_dy(x_a.reshape(-1, 1),
-                                                                      x_b.reshape(-1, 1))
-            all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
-
-    return np.dot(all_hessians,all_hessians)/n + lmbda*all_hessians
-
 def compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2):
     n, d = data.shape
 
     b = np.zeros((n * d + 1, 1))
     b[0] = -xi_norm_2
 
-    h = compute_h(kernel_dx_dx_dy, data)
+    h = compute_h_old_interface(kernel_dx_dx_dy, data)
     for a in range(n):
         for i in range(d):
             b[1 + a * d + i] = -h[a, i]
@@ -88,9 +74,9 @@ def build_system_loop(X, sigma, lmbda):
     SE_dx_dy_l = lambda x, y: SE_dx_dy(x, y, l)
     SE_dx_dx_dy_dy_l = lambda x, y: SE_dx_dx_dy_dy(x, y, l)
 
-    h = compute_h(SE_dx_dx_dy_l, X)
+    h = compute_h_old_interface(SE_dx_dx_dy_l, X)
     G = compute_G(SE_dx_dy_l, X)
-    xi_norm_2 = compute_xi_norm_2(SE_dx_dx_dy_dy_l, X)
+    xi_norm_2 = compute_xi_norm_2_old_interface(SE_dx_dx_dy_dy_l, X)
 
     A = np.zeros((n * d + 1, n * d + 1))
 
@@ -119,37 +105,23 @@ def build_system_loop(X, sigma, lmbda):
 
     return A, b
 
-def build_system_fast(X, sigma, lmbda):
-    l = np.sqrt(np.float(sigma) / 2)
 
-    n, d = X.shape
-
-    SE_dx_dx_dy_l = lambda x, y: SE_dx_dx_dy(x, y, l)
-    SE_dx_dy_l = lambda x, y: SE_dx_dy(x, y, l)
-    SE_dx_dx_dy_dy_l = lambda x, y: SE_dx_dx_dy_dy(x, y, l)
-
-    h = compute_h(SE_dx_dx_dy_l, X)
-    G = compute_G(SE_dx_dy_l, X)
-    xi_norm_2 = compute_xi_norm_2(SE_dx_dx_dy_dy_l, X)
-
-    A = np.zeros((n * d + 1, n * d + 1))
-
-    # Top left element
-    A[0, 0] = np.sum(h ** 2) / n + lmbda * xi_norm_2
-
-    # First row and first column
+def compute_h_old_interface(kernel_dx_dx_dy, data):
+    n, d = data.shape
+    h = np.zeros((n, d))
     for b in range(n):
-        for j in range(d):
-            A[0, 1 + b * d + j] = np.sum(G[:, b, :, j] * h) / n + lmbda * h[b, j]
-            A[1 + b * d + j, 0] = A[0, 1 + b * d + j]
+        for a in range(n):
+            h[b, :] += np.sum(kernel_dx_dx_dy(data[a, :].reshape(-1, 1), data[b, :].reshape(-1, 1)), axis=0)
+            
+    return h / n
 
-    # All other elements - (n*d)x(n*d) lower right submatrix
-    A[1:, 1:] = compute_lower_right_submatrix_old(SE_dx_dy_l, X, lmbda)
-
-    b = np.zeros((n * d + 1, 1))
-
-    b[0] = -xi_norm_2
+def compute_xi_norm_2_old_interface(kernel_dx_dx_dy_dy, data):
+    n, _ = data.shape
+    norm_2 = 0
     for a in range(n):
-        b[1 + a * d : 1 + a*d + d] = -h[a, :].reshape(-1, 1)
-
-    return A, b
+        for b in range(n):
+            x = data[a, :].reshape(-1, 1)
+            y = data[b, :].reshape(-1, 1)
+            norm_2 += np.sum(kernel_dx_dx_dy_dy(x, y))
+            
+    return norm_2 / n ** 2
