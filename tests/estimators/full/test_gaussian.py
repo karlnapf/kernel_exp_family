@@ -4,11 +4,10 @@ from numpy.ma.testutils import assert_close
 
 import autograd.numpy as np  # Thinly-wrapped numpy
 from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
-    compute_RHS_loop, log_pdf_naive
+    compute_RHS_loop, log_pdf_naive, build_system_fast, build_system_loop
 from kernel_exp_family.estimators.full.gaussian import SE_dx_i_dx_j, \
     SE_dx_i_dx_i_dx_j, SE, SE_dx, KernelExpFullGaussian, build_system, \
-    build_system_fast, SE_dx_dy, compute_lower_right_submatrix, compute_RHS, \
-    SE_dx_dx_dy, build_system_even_faster, log_pdf
+    SE_dx_dy, compute_lower_right_submatrix, compute_RHS, SE_dx_dx_dy, log_pdf
 
 
 def setup():
@@ -80,15 +79,28 @@ def test_grad():
 
     assert_close(est.grad(x_new), auto_gradient(x_new))
 
-def test_build_system_old_new():
+
+def test_build_system_partially_vectorised_equals_implementation():
     data, _, sigma, lmbda  = setup()
 
-    A_new, b_new = build_system_fast(data, sigma, lmbda)
+    A_new, b_new = build_system(data, sigma, lmbda)
 
-    A_old, b_old = build_system(data, sigma, lmbda)
+    A_old, b_old = build_system_fast(data, sigma, lmbda)
+
+    assert_close(A_new, A_old)
+    assert_close(b_new, np.squeeze(b_old.T))
+
+
+def test_build_system_loop_equals_implementation():
+    data, _, sigma, lmbda  = setup()
+
+    A_new, b_new = build_system(data, sigma, lmbda)
+
+    A_old, b_old = build_system_loop(data, sigma, lmbda)
 
     assert_close(A_new, A_old, verbose=True)
-    assert_close(b_new, b_old)
+    assert_close(b_new, np.squeeze(b_old.T))
+
 
 def test_compute_lower_submatrix():
     data, l, _, lmbda  = setup()
@@ -112,15 +124,6 @@ def test_compute_RHS_vector():
 
     assert_close(rhs_vector, rhs_loop)
 
-def test_build_system_even_fast():
-    data, _, sigma, lmbda  = setup()
-    
-    A_new, b_new = build_system_even_faster(data, sigma, lmbda)
-
-    A_old, b_old = build_system_fast(data, sigma, lmbda)
-
-    assert_close(A_new, A_old, verbose=True)
-    assert_close(b_new, np.squeeze(b_old.T))
 
 def test_log_pdf_equals_log_pdf_naive():
     N=10

@@ -1,5 +1,7 @@
-from kernel_exp_family.estimators.full.gaussian import compute_G, compute_h,\
-    SE_dx_dx, SE_dx
+from kernel_exp_family.estimators.full.gaussian import compute_G, compute_h, \
+    compute_xi_norm_2, compute_lower_right_submatrix
+from kernel_exp_family.kernels.develop.kernels import SE_dx_dx_dy, SE_dx_dy, \
+    SE_dx_dx, SE_dx, SE_dx_dx_dy_dy
 import numpy as np
 
 
@@ -47,3 +49,80 @@ def compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2):
             b[1 + a * d + i] = -h[a, i]
 
     return b
+
+def build_system_loop(X, sigma, lmbda):
+        # esben parametrised kernel in terms of l as exp(-||---|| / (2*l^2)
+    # therefore sigma = 2*(l**2)
+    l = np.sqrt(np.float(sigma) / 2)
+
+    n, d = X.shape
+
+    SE_dx_dx_dy_l = lambda x, y: SE_dx_dx_dy(x, y, l)
+    SE_dx_dy_l = lambda x, y: SE_dx_dy(x, y, l)
+    SE_dx_dx_dy_dy_l = lambda x, y: SE_dx_dx_dy_dy(x, y, l)
+
+    h = compute_h(SE_dx_dx_dy_l, X)
+    G = compute_G(SE_dx_dy_l, X)
+    xi_norm_2 = compute_xi_norm_2(SE_dx_dx_dy_dy_l, X)
+
+    A = np.zeros((n * d + 1, n * d + 1))
+
+    # Top left element
+    A[0, 0] = np.sum(h ** 2) / n + lmbda * xi_norm_2
+
+    # First row and first column
+    for b in range(n):
+        for j in range(d):
+            A[0, 1 + b * d + j] = np.sum(G[:, b, :, j] * h) / n + lmbda * h[b, j]
+            A[1 + b * d + j, 0] = A[0, 1 + b * d + j]
+
+    # All other elements - (n*d)x(n*d) lower right submatrix
+    for a in range(n):
+        for i in range(d):
+            for b in range(n):
+                for j in range(d):
+                    A[1 + b * d + j, 1 + a * d + i] = np.sum(G[a, :, i, :] * G[:, b, :, j]) / n + lmbda * G[a, b, i, j]
+
+    b = np.zeros((n * d + 1, 1))
+
+    b[0] = -xi_norm_2
+    for a in range(n):
+        for i in range(d):
+            b[1 + a * d + i] = -h[a, i]
+
+    return A, b
+
+def build_system_fast(X, sigma, lmbda):
+    l = np.sqrt(np.float(sigma) / 2)
+
+    n, d = X.shape
+
+    SE_dx_dx_dy_l = lambda x, y: SE_dx_dx_dy(x, y, l)
+    SE_dx_dy_l = lambda x, y: SE_dx_dy(x, y, l)
+    SE_dx_dx_dy_dy_l = lambda x, y: SE_dx_dx_dy_dy(x, y, l)
+
+    h = compute_h(SE_dx_dx_dy_l, X)
+    G = compute_G(SE_dx_dy_l, X)
+    xi_norm_2 = compute_xi_norm_2(SE_dx_dx_dy_dy_l, X)
+
+    A = np.zeros((n * d + 1, n * d + 1))
+
+    # Top left element
+    A[0, 0] = np.sum(h ** 2) / n + lmbda * xi_norm_2
+
+    # First row and first column
+    for b in range(n):
+        for j in range(d):
+            A[0, 1 + b * d + j] = np.sum(G[:, b, :, j] * h) / n + lmbda * h[b, j]
+            A[1 + b * d + j, 0] = A[0, 1 + b * d + j]
+
+    # All other elements - (n*d)x(n*d) lower right submatrix
+    A[1:, 1:] = compute_lower_right_submatrix(SE_dx_dy_l, X, lmbda)
+
+    b = np.zeros((n * d + 1, 1))
+
+    b[0] = -xi_norm_2
+    for a in range(n):
+        b[1 + a * d : 1 + a*d + d] = -h[a, :].reshape(-1, 1)
+
+    return A, b
