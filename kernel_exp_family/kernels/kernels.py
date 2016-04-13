@@ -100,6 +100,18 @@ def gaussian_kernel_grad(x, Y, sigma=1.):
     G = (2.0 / sigma) * (k.T * differences)
     return G
 
+def gaussian_kernel_hessian(x, y, sigma=1.):
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+    differences = y-x
+    H = k*(2*np.eye(d)/sigma - 4*np.outer(differences, differences)/sigma**2)
+    return H
+
 def rff_sample_basis(D, m, sigma):
     # rbf sampler is parametrised in gamma, which is at the same time
     # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
