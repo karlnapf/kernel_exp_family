@@ -1,7 +1,25 @@
-from kernel_exp_family.estimators.full.gaussian import SE_dx_dx, SE_dx
+from kernel_exp_family.estimators.full.gaussian import SE_dx_dx, SE_dx,\
+    build_system_even_faster
 import numpy as np
-from kernel_exp_family.estimators.full.gaussian_nystrom import ind_to_ai
 
+
+def nystrom_naive(X, sigma, lmbda, inds):
+    A, b = build_system_even_faster(X, sigma, lmbda)
+    
+    inds_with_xi = np.zeros(len(inds)+1)
+    inds_with_xi[1:] = (inds+1)
+    inds_with_xi = inds_with_xi.astype(np.int)
+    
+    A_mm = A[:, inds_with_xi][inds_with_xi]
+    A_nm = A[:, inds_with_xi]
+    
+    return A_mm, A_nm, b
+
+def ind_to_ai(ind, D):
+    """
+    For a given row index of the A matrix, return corresponding data and component index
+    """
+    return ind/D, ind%D
 
 def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     N, D = X.shape
@@ -23,4 +41,4 @@ def log_pdf_naive(x, X, sigma, alpha, beta, inds):
         xi += xi_grad[i] / N
         betasum += gradient_x_xa[i] * beta[ind]
     
-    return alpha * xi + betasum
+    return np.float(alpha * xi + betasum)
