@@ -1,6 +1,7 @@
 from kernel_exp_family.estimators.full.gaussian import build_system
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
-    gaussian_kernel_grad
+    gaussian_kernel_grad, gaussian_kernel_dx_i_dx_i_dx_j,\
+    gaussian_kernel_dx_i_dx_j
 import numpy as np
 
 
@@ -39,3 +40,20 @@ def log_pdf_naive(x, X, sigma, alpha, beta, inds):
         betasum += gradient_x_xa[i] * beta[ind]
     
     return np.float(alpha * xi + betasum)
+
+def grad_naive(x, X, sigma, alpha, beta, inds):
+    N, D = X.shape
+    
+    xi_grad = 0
+    betasum_grad = 0
+    
+    ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
+    
+    for ind, (a,i) in enumerate(ais):
+        x_a = X[a]
+        xi_gradient_vec = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
+        left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
+        xi_grad += xi_gradient_vec[i] / N
+        betasum_grad += beta[ind] * left_arg_hessian[i]
+
+    return alpha * xi_grad + betasum_grad

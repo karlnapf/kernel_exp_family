@@ -1,8 +1,10 @@
 from nose.tools import assert_almost_equal
 from numpy.ma.testutils import assert_close
+from numpy.testing.utils import assert_allclose
 
 from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
-    compute_RHS_loop, log_pdf_naive, build_system_loop, compute_h_old_interface
+    compute_RHS_loop, log_pdf_naive, build_system_loop, compute_h_old_interface,\
+    grad_naive
 from kernel_exp_family.estimators.full.gaussian import build_system, \
     compute_RHS, log_pdf, compute_lower_right_submatrix,\
     compute_h, grad
@@ -64,20 +66,31 @@ def test_compute_RHS_vector():
 
     assert_close(rhs_vector, np.squeeze(rhs_loop.T))
 
-
 def test_log_pdf_equals_log_pdf_naive():
     N=10
     D=2
     X = np.random.randn(N,D)
-    x = np.random.randn(D)
     sigma = 1.
     alpha = np.random.randn()
     beta = np.random.randn(N,D)
     
-    a = log_pdf(x, X, sigma, alpha, beta)
-    b = log_pdf_naive(x, X, sigma, alpha, beta)
+    for x in np.random.randn(N,D):
+        a = log_pdf(x, X, sigma, alpha, beta)
+        b = log_pdf_naive(x, X, sigma, alpha, beta)
+        assert_almost_equal(a,b)
+
+def test_grad_equals_grad_naive():
+    N=10
+    D=2
+    X = np.random.randn(N,D)
+    sigma = 1.
+    alpha = np.random.randn()
+    beta = np.random.randn(N,D)
     
-    assert_almost_equal(a,b)
+    for x in np.random.randn(N,D):
+        a = grad(x, X, sigma, alpha, beta)
+        b = grad_naive(x, X, sigma, alpha, beta)
+        assert_allclose(a,b)
 
 def test_gradient_execute():
     N=10

@@ -1,28 +1,39 @@
-from kernel_exp_family.estimators.full.gaussian import compute_h, \
-    compute_xi_norm_2
-from kernel_exp_family.kernels.develop.kernels import SE_dx_dx_dy, SE_dx_dy, \
-    SE_dx_dx, SE_dx, SE_dx_dx_dy_dy
+from kernel_exp_family.kernels.develop.kernels import SE_dx_dx_dy, SE_dx_dy,\
+    SE_dx_dx_dy_dy
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_i_dx_i_dx_j,\
+    gaussian_kernel_dx_i_dx_j, gaussian_kernel_grad, gaussian_kernel_dx_dx
 import numpy as np
 
 
 def log_pdf_naive(x, X, sigma, alpha, beta):
     N, D = X.shape
     
-    l = np.sqrt(np.float(sigma) / 2)
-    SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
-    SE_dx_l = lambda x, y: SE_dx(x, y, l)
-    
     xi = 0
     betasum = 0
     for a in range(N):
-        x_a = X[a, :].reshape(-1, 1)
-        gradient_x_xa= np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
-        xi_grad = SE_dx_dx_l(x.reshape(-1, 1), x_a)
+        x_a = np.atleast_2d(X[a, :])
+        gradient_x_xa = np.squeeze(gaussian_kernel_grad(x, x_a, sigma))
+        xi_grad = np.squeeze(gaussian_kernel_dx_dx(x, x_a, sigma))
         for i in range(D):
             xi += xi_grad[i] / N
             betasum += gradient_x_xa[i] * beta[a, i]
     
     return alpha * xi + betasum
+
+def grad_naive(x, X, sigma, alpha, beta):
+    N, D = X.shape
+    
+    xi_grad = 0
+    betasum_grad = 0
+    for a, x_a in enumerate(X):
+        xi_gradient_vec = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
+        left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
+        
+        for i in range(D):
+            xi_grad += xi_gradient_vec[i] / N
+            betasum_grad += beta[a, i] * left_arg_hessian[i]
+
+    return alpha * xi_grad + betasum_grad
 
 def compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda):
     n, d = data.shape
