@@ -1,6 +1,4 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.gaussian import build_system, \
-    SE_dx_dx, SE_dx, SE_dx_i_dx_i_dx_j, SE_dx_i_dx_j
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive,\
     nystrom_naive
 from kernel_exp_family.tools.assertions import assert_array_shape
