@@ -27,7 +27,6 @@ def ind_to_ai(ind, D):
 def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     N, D = X.shape
     
-    
     xi = 0
     betasum = 0
     
