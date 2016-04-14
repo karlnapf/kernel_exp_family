@@ -54,8 +54,8 @@ def test_fit_nystrom_all_inds_equals_fit():
     alpha, beta = fit(X, sigma, lmbda, inds)
     
     # low accuracy as numerically potentially unstable
-    assert_almost_equal(alpha_full, alpha, delta=1e-2)
-    assert_allclose(beta_full.reshape(N*D,), beta, rtol=1e-2)
+    assert_almost_equal(alpha_full, alpha, delta=1e-1)
+    assert_allclose(beta_full.reshape(N*D,), beta, rtol=1e-1)
 
 def test_full_pipeline_nystrom_all_inds_equals_full():
     sigma = 3

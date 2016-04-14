@@ -20,7 +20,7 @@ def nystrom(X, sigma, lmbda, inds):
 
 def fit(X, sigma, lmbda, inds):
     N,D = X.shape
-    A_mm, A_nm, b = nystrom(X, sigma, lmbda, inds)
+    A_nm, b = nystrom(X, sigma, lmbda, inds)
     
     A = np.dot(A_nm.T, A_nm)
     b = np.dot(A_nm.T, b).flatten()

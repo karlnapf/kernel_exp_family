@@ -10,10 +10,9 @@ def nystrom_naive(X, sigma, lmbda, inds):
     inds_with_xi[1:] = (inds+1)
     inds_with_xi = inds_with_xi.astype(np.int)
     
-    A_mm = A[:, inds_with_xi][inds_with_xi]
     A_nm = A[:, inds_with_xi]
     
-    return A_mm, A_nm, b
+    return A_nm, b
 
 def ind_to_ai(ind, D):
     """
