@@ -20,7 +20,7 @@ def fit(X, sigma, lmbda, inds):
     return alpha, beta
 
 class KernelExpFullNystromGaussian(EstimatorBase):
-    def __init__(self, sigma, lmbda, N, D, m):
+    def __init__(self, sigma, lmbda, D, N, m):
         self.sigma = sigma
         self.lmbda = lmbda
         self.N = N
