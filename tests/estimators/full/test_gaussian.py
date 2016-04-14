@@ -1,15 +1,15 @@
 from nose.tools import assert_almost_equal
 from numpy.ma.testutils import assert_close
-import numpy as np
 
 from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
     compute_RHS_loop, log_pdf_naive, build_system_loop, compute_h_old_interface
-from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian, build_system, \
+from kernel_exp_family.estimators.full.gaussian import build_system, \
     compute_RHS, log_pdf, compute_lower_right_submatrix,\
     compute_h, grad
+from kernel_exp_family.kernels.develop.kernels import SE_dx_dy, SE_dx_dx_dy
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
-from kernel_exp_family.kernels.develop.kernels import SE_dx_i_dx_j, \
-    SE_dx_i_dx_i_dx_j, SE, SE_dx, SE_dx_dy, SE_dx_dx_dy
+import numpy as np
+
 
 def setup():
     """ Generates some data and parameters """

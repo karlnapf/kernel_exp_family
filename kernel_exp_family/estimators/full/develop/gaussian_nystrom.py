@@ -1,5 +1,6 @@
-from kernel_exp_family.estimators.full.gaussian import SE_dx_dx, SE_dx,\
-    build_system
+from kernel_exp_family.estimators.full.gaussian import build_system
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
+    gaussian_kernel_grad
 import numpy as np
 
 
@@ -23,9 +24,6 @@ def ind_to_ai(ind, D):
 def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     N, D = X.shape
     
-    l = np.sqrt(np.float(sigma) / 2)
-    SE_dx_dx_l = lambda x, y : SE_dx_dx(x, y, l)
-    SE_dx_l = lambda x, y: SE_dx(x, y, l)
     
     xi = 0
     betasum = 0
@@ -33,9 +31,9 @@ def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
     
     for ind, (a,i) in enumerate(ais):
-        x_a = X[a, :].reshape(-1, 1)
-        gradient_x_xa = np.squeeze(SE_dx_l(x.reshape(-1, 1), x_a))
-        xi_grad = SE_dx_dx_l(x.reshape(-1, 1), x_a)
+        x_a = np.atleast_2d(X[a, :])
+        gradient_x_xa = np.squeeze(gaussian_kernel_grad(x, x_a, sigma))
+        xi_grad = np.squeeze(gaussian_kernel_dx_dx(x, x_a, sigma))
         
         xi += xi_grad[i] / N
         betasum += gradient_x_xa[i] * beta[ind]
