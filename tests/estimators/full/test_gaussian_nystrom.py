@@ -66,7 +66,7 @@ def test_full_pipeline_nystrom_all_inds_equals_full():
     X = np.random.randn(N,D)
     x = np.zeros(D)
     
-    est = KernelExpFullNystromGaussian(sigma, lmbda, N, D, m=N*D)
+    est = KernelExpFullNystromGaussian(sigma, lmbda, D, N, m=N*D)
     est.fit(X)
     est2 = KernelExpFullGaussian(sigma, lmbda, D, N)
     est2.fit(X)
