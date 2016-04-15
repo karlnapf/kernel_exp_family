@@ -12,8 +12,9 @@ from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel,
     rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis, \
     gaussian_kernel_hessian, gaussian_kernel_hessians, gaussian_kernel_dx_dx_dy, \
     gaussian_kernel_dx_dx, gaussian_kernel_dx_dx_dy_dy, gaussian_kernel_dx_i_dx_j, \
-    gaussian_kernel_dx_i_dx_i_dx_j
-
+    gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_component,\
+    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
+    gaussian_kernel_dx_i_dx_j_component
 import numpy as np
 
 
@@ -406,3 +407,47 @@ def test_gaussian_kernel_dx_i_dx_i_dx_j_equals_SE_dx_i_dx_i_dx_j():
     reference = SE_dx_i_dx_i_dx_j(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma/2.0))
 
     assert_close(implementation, reference)
+
+def test_gaussian_kernel_dx_component_equals_grad():
+    D = 4
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    grad = gaussian_kernel_grad(x,np.atleast_2d(y), sigma)[0]
+    for i in range(D):
+        dxi = gaussian_kernel_dx_component(x, y, i, sigma)
+        assert_allclose(grad[i], dxi)
+
+def test_gaussian_kernel_dx_dx_component_equals_gaussian_kernel_dx_dx():
+    D = 4
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    dx_dx = gaussian_kernel_dx_dx(x, np.atleast_2d(y), sigma)[0]
+    for i in range(D):
+        dxi = gaussian_kernel_dx_dx_component(x, y, i, sigma)
+        assert_allclose(dx_dx[i], dxi)
+        
+def test_gaussian_kernel_dx_i_dx_i_dx_j_component_equals_gaussian_kernel_dx_i_dx_i_dx_j():
+    D = 4
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    dx_i_dx_i_dx_j = gaussian_kernel_dx_i_dx_i_dx_j(x, y, sigma)
+    for i in range(D):
+        a = gaussian_kernel_dx_i_dx_i_dx_j_component(x, y, i, sigma)
+        assert_allclose(dx_i_dx_i_dx_j[i], a)
+
+def test_gaussian_kernel_dx_i_dx_j_component_equals_gaussian_kernel_dx_i_dx_j():
+    D = 4
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    dx_i_dx_j = gaussian_kernel_dx_i_dx_j(x, y, sigma)
+    for i in range(D):
+        a = gaussian_kernel_dx_i_dx_j_component(x, y, i, sigma)
+        assert_allclose(dx_i_dx_j[i], a)
