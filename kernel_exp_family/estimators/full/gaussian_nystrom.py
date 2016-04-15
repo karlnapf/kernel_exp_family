@@ -1,6 +1,7 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.develop.gaussian_nystrom import nystrom_naive,\
+from kernel_exp_family.estimators.full.develop.gaussian_nystrom import build_system_nystrom_naive,\
     ind_to_ai
+from kernel_exp_family.estimators.full.gaussian import build_system
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component,\
     gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
     gaussian_kernel_dx_i_dx_j_component
@@ -8,6 +9,7 @@ from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
 
+<<<<<<< d178c4652ad994c5bce7ceb7444c8d03651de711
 def nystrom(X, sigma, lmbda, inds):
     A, b = build_system(X, sigma, lmbda)
     
@@ -19,9 +21,21 @@ def nystrom(X, sigma, lmbda, inds):
     b_m = b[inds_with_xi]
     
     return A_mm, A_nm, b_m, inds
+=======
+def build_system_nystrom(X, sigma, lmbda, inds):
+    A, b = build_system(X, sigma, lmbda)
+    
+    inds_with_xi = np.zeros(len(inds)+1)
+    inds_with_xi[1:] = (inds+1)
+    inds_with_xi = inds_with_xi.astype(np.int)
+    
+    A_nm = A[:, inds_with_xi]
+    
+    return A_nm, b
+>>>>>>> some refactoring and a test for build_system_nystrom
 
 def fit(X, sigma, lmbda, inds):
-    A_nm, b = nystrom(X, sigma, lmbda, inds)
+    A_nm, b = build_system_nystrom(X, sigma, lmbda, inds)
     
     A = np.dot(A_nm.T, A_nm)
     b = np.dot(A_nm.T, b).flatten()

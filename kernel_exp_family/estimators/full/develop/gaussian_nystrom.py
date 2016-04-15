@@ -7,8 +7,8 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
 import numpy as np
 
 
-def nystrom_naive(X, sigma, lmbda, inds):
-    A, b = build_system_even_faster(X, sigma, lmbda)
+def build_system_nystrom_naive(X, sigma, lmbda, inds):
+    A, b = build_system(X, sigma, lmbda)
     
     inds_with_xi = np.zeros(len(inds)+1)
     inds_with_xi[1:] = (inds+1)
