@@ -40,8 +40,8 @@ def log_pdf(x, X, sigma, alpha, beta, inds):
     ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
     
     for ind, (a, i) in enumerate(ais):
-        gradient_x_xa_i = gaussian_kernel_dx_component(x, X[a, :], i, sigma)
-        xi_grad_i = gaussian_kernel_dx_dx_component(x, X[a,:], i, sigma)
+        gradient_x_xa_i = gaussian_kernel_dx_component(x, X[a], i, sigma)
+        xi_grad_i = gaussian_kernel_dx_dx_component(x, X[a], i, sigma)
         
         xi += xi_grad_i / N
         betasum += gradient_x_xa_i * beta[ind]
