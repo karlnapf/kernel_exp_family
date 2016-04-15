@@ -1,22 +1,34 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import build_system_nystrom_naive,\
     ind_to_ai
-from kernel_exp_family.estimators.full.gaussian import build_system
+from kernel_exp_family.estimators.full.gaussian import build_system, compute_h,\
+    compute_xi_norm_2, compute_lower_right_submatrix, compute_first_row,\
+    compute_RHS
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component,\
     gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
-    gaussian_kernel_dx_i_dx_j_component
+    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessians
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
 
 def build_system_nystrom(X, sigma, lmbda, inds):
-    A, b = build_system(X, sigma, lmbda)
+    n, d = X.shape
+    m = len(inds)
+
+    h = compute_h(X, sigma).reshape(-1)
+    all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
+    xi_norm_2 = compute_xi_norm_2(X, sigma)
     
-    inds_with_xi = np.zeros(len(inds)+1)
-    inds_with_xi[1:] = (inds+1)
-    inds_with_xi = inds_with_xi.astype(np.int)
+    A_nm = np.zeros((m + 1, n * d + 1))
+    A_nm[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
     
-    A_nm = A[:, inds_with_xi]
+    lower_right = np.dot(all_hessians[inds, :],all_hessians)/n + lmbda*all_hessians[inds, :]
+    A_nm[1:, 1:] = lower_right
+    
+    A_nm[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)[inds]
+    A_nm[1:, 0] = A_nm[0,1:]
+    
+    b = compute_RHS(h, xi_norm_2)
     
     return A_nm, b
 
