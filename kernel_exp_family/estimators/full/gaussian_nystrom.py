@@ -19,24 +19,24 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
     xi_norm_2 = compute_xi_norm_2(X, sigma)
     
-    A_nm = np.zeros((m + 1, n * d + 1))
-    A_nm[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
+    A_mn = np.zeros((m + 1, n * d + 1))
+    A_mn[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
     
     lower_right = np.dot(all_hessians[inds, :],all_hessians)/n + lmbda*all_hessians[inds, :]
-    A_nm[1:, 1:] = lower_right
+    A_mn[1:, 1:] = lower_right
     
-    A_nm[0, 1:] = compute_first_row(h, all_hessians[inds], n, lmbda)
-    A_nm[1:, 0] = A_nm[0,1:]
+    A_mn[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
+    A_mn[1:, 0] = A_mn[0,inds+1]
     
     b = compute_RHS(h, xi_norm_2)
     
-    return A_nm, b
+    return A_mn, b
 
 def fit(X, sigma, lmbda, inds):
-    A_nm, b = build_system_nystrom(X, sigma, lmbda, inds)
+    A_mn, b = build_system_nystrom(X, sigma, lmbda, inds)
     
-    A = np.dot(A_nm.T, A_nm)
-    b = np.dot(A_nm.T, b).flatten()
+    A = np.dot(A_mn, A_mn.T)
+    b = np.dot(A_mn, b).flatten()
     
     x = np.linalg.solve(A, b)
     alpha = x[0]
