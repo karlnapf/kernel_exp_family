@@ -4,8 +4,7 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
     gaussian_kernel_dx_i_dx_j
 import numpy as np
 
-
-def nystrom_naive(X, sigma, lmbda, inds):
+def build_system_nystrom_naive(X, sigma, lmbda, inds):
     A, b = build_system(X, sigma, lmbda)
     
     inds_with_xi = np.zeros(len(inds)+1)

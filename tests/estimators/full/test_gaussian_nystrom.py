@@ -3,11 +3,11 @@ from numpy.testing.utils import assert_allclose
 
 import kernel_exp_family.estimators.full.develop.gaussian as gaussian_full_develop
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive,\
-    grad_naive
+    grad_naive, build_system_nystrom_naive
 from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian
 import kernel_exp_family.estimators.full.gaussian as gaussian_full
 from kernel_exp_family.estimators.full.gaussian_nystrom import KernelExpFullNystromGaussian,\
-    fit, log_pdf, grad
+    fit, log_pdf, grad, build_system_nystrom
 import numpy as np
 
 
@@ -134,3 +134,18 @@ def test_grad_naive_equals_grad():
         a = grad_naive(x, X, sigma, alpha, beta, inds)
         b = grad(x, X, sigma, alpha, beta, inds)
         assert_allclose(a, b)
+
+def test_build_system_nystrom_equals_build_system_nystrom_naive():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    inds = np.arange(N * D)
+    
+    A, b = build_system_nystrom(X, sigma, lmbda, inds)
+    A_naive, b_naive = build_system_nystrom_naive(X, sigma, lmbda, inds)
+    
+    assert_allclose(A, A_naive)
+    assert_allclose(b, b_naive)
+    
