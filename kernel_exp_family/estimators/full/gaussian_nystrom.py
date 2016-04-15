@@ -1,6 +1,9 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive,\
-    nystrom_naive, grad_naive
+from kernel_exp_family.estimators.full.develop.gaussian_nystrom import nystrom_naive, grad_naive, ind_to_ai
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx, gaussian_kernel_dx_component,\
+    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j,\
+    gaussian_kernel_dx_i_dx_j, gaussian_kernel_dx_i_dx_i_dx_j_component,\
+    gaussian_kernel_dx_i_dx_j_component
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
@@ -20,11 +23,39 @@ def fit(X, sigma, lmbda, inds):
     return alpha, beta
 
 def log_pdf(x, X, sigma, alpha, beta, inds):
-    return log_pdf_naive(x, X, sigma, alpha, beta, inds)
+    N, D = X.shape
+    
+    xi = 0
+    betasum = 0
+    
+    ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
+    
+    for ind, (a, i) in enumerate(ais):
+        gradient_x_xa_i = gaussian_kernel_dx_component(x, X[a, :], i, sigma)
+        xi_grad_i = gaussian_kernel_dx_dx_component(x, X[a,:], i, sigma)
+        
+        xi += xi_grad_i / N
+        betasum += gradient_x_xa_i * beta[ind]
+    
+    return np.float(alpha * xi + betasum)
 
 def grad(x, X, sigma, alpha, beta, inds):
-    return grad_naive(x, X, sigma, alpha, beta, inds)
+    N, D = X.shape
     
+    xi_grad = 0
+    betasum_grad = 0
+    
+    ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
+    
+    for ind, (a,i) in enumerate(ais):
+        x_a = X[a]
+        xi_gradient_mat_component = gaussian_kernel_dx_i_dx_i_dx_j_component(x, x_a, i, sigma)
+        left_arg_hessian_component = gaussian_kernel_dx_i_dx_j_component(x, x_a, i, sigma)
+        
+        xi_grad += xi_gradient_mat_component / N
+        betasum_grad += beta[ind] * left_arg_hessian_component
+
+    return alpha * xi_grad + betasum_grad
 
 class KernelExpFullNystromGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, D, N, m):
@@ -38,7 +69,7 @@ class KernelExpFullNystromGaussian(EstimatorBase):
         self.beta = np.zeros(m)
         self.X = np.zeros((0, D))
         
-        self.inds = np.sort(np.random.permutation(N*D)[:m])
+        self.inds = np.sort(np.random.permutation(N * D)[:m])
         self.m = m
     
     def fit(self, X):

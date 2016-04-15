@@ -50,9 +50,9 @@ def grad_naive(x, X, sigma, alpha, beta, inds):
     
     for ind, (a,i) in enumerate(ais):
         x_a = X[a]
-        xi_gradient_vec = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
+        xi_gradient_mat = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
         left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
-        xi_grad += xi_gradient_vec[i] / N
+        xi_grad += xi_gradient_mat[i] / N
         betasum_grad += beta[ind] * left_arg_hessian[i]
 
     return alpha * xi_grad + betasum_grad
