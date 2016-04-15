@@ -1,8 +1,8 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.develop.gaussian_nystrom import nystrom_naive, grad_naive, ind_to_ai
-from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx, gaussian_kernel_dx_component,\
-    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j,\
-    gaussian_kernel_dx_i_dx_j, gaussian_kernel_dx_i_dx_i_dx_j_component,\
+from kernel_exp_family.estimators.full.develop.gaussian_nystrom import nystrom_naive,\
+    ind_to_ai
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component,\
+    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
     gaussian_kernel_dx_i_dx_j_component
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
