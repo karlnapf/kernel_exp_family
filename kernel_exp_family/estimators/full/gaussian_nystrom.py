@@ -25,7 +25,7 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     lower_right = np.dot(all_hessians[inds, :],all_hessians)/n + lmbda*all_hessians[inds, :]
     A_nm[1:, 1:] = lower_right
     
-    A_nm[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)[inds]
+    A_nm[0, 1:] = compute_first_row(h, all_hessians[inds], n, lmbda)
     A_nm[1:, 0] = A_nm[0,1:]
     
     b = compute_RHS(h, xi_norm_2)
