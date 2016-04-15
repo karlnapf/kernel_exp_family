@@ -1,5 +1,6 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian
+from kernel_exp_family.estimators.full.gaussian_nystrom import KernelExpFullNystromGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
 from kernel_exp_family.estimators.lite.gaussian_low_rank import KernelExpLiteGaussianLowRank
 from kernel_exp_family.examples.tools import visualise_fit_2d
@@ -31,6 +32,11 @@ def get_KernelExpFullGaussian_instance(D, N):
     sigma = 5.
     lmbda = 0.01
     return KernelExpFullGaussian(sigma, lmbda, D, N)
+
+def get_KernelExpNystromGaussian_instance(D, N):
+    sigma = 5
+    lmbda = 0.1
+    return KernelExpFullNystromGaussian(sigma, lmbda, D, N, m=N*D*0.3)
 
 class ground_truth():
     def __init__(self):
@@ -66,7 +72,7 @@ if __name__ == '__main__':
                   get_KernelExpLiteGaussian_instance(D, N),
                   get_KernelExpLiteGaussianLowRank_instance(D, N),
                   get_KernelExpFullGaussian_instance(D, N),
-                  
+                  get_KernelExpNystromGaussian_instance(D, N),
                   ground_truth()
                   ]
     
