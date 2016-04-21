@@ -49,7 +49,10 @@ def fit(X, sigma, lmbda, inds):
     A = np.dot(A_mn, A_mn.T)
     b = np.dot(A_mn, b).flatten()
     
-    x = np.linalg.solve(A, b)
+    # x = np.linalg.solve(A, b)
+    # pseudo-inverse calculation via eigendecomposition
+    x = np.dot(np.linalg.pinv(A), b)
+    
     alpha = x[0]
     beta = x[1:]
     return alpha, beta
