@@ -20,13 +20,13 @@ def compute_h(data, sigma):
 
 
 def compute_lower_right_submatrix(all_hessians, N, lmbda):
-    return np.dot(all_hessians,all_hessians)/N + lmbda*all_hessians
+    return np.dot(all_hessians, all_hessians) / N + lmbda * all_hessians
 
 def compute_first_row(h, all_hessians, n, lmbda):
-    return np.dot(h, all_hessians)/n + lmbda*h
+    return np.dot(h, all_hessians) / n + lmbda * h
 
 def compute_RHS(h, xi_norm_2):
-    b = np.zeros(h.size+1)
+    b = np.zeros(h.size + 1)
     b[0] = -xi_norm_2
     b[1:] = -h.reshape(-1)
 
@@ -50,11 +50,11 @@ def build_system(X, sigma, lmbda):
     xi_norm_2 = compute_xi_norm_2(X, sigma)
     
     A = np.zeros((n * d + 1, n * d + 1))
-    A[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
+    A[0, 0] = np.dot(h, h) / n + lmbda * xi_norm_2
     A[1:, 1:] = compute_lower_right_submatrix(all_hessians, n, lmbda)
     
     A[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
-    A[1:, 0] = A[0,1:]
+    A[1:, 0] = A[0, 1:]
     
     b = compute_RHS(h, xi_norm_2)
     
@@ -73,15 +73,15 @@ def log_pdf(x, X, sigma, alpha, beta):
     assert_array_shape(x, ndim=1, dims={0: D})
     N = len(X)
     
-    SE_dx_dx_l = lambda x, y : gaussian_kernel_dx_dx(x, y.reshape(1,-1), sigma)
-    SE_dx_l = lambda x, y: gaussian_kernel_grad(x, y.reshape(1,-1), sigma)
+    SE_dx_dx_l = lambda x, y : gaussian_kernel_dx_dx(x, y.reshape(1, -1), sigma)
+    SE_dx_l = lambda x, y: gaussian_kernel_grad(x, y.reshape(1, -1), sigma)
     
     xi = 0
     betasum = 0
     for a in range(N):
         x_a = X[a, :]
         xi += np.sum(SE_dx_dx_l(x, x_a)) / N
-        gradient_x_xa= np.squeeze(SE_dx_l(x, x_a))
+        gradient_x_xa = np.squeeze(SE_dx_l(x, x_a))
         betasum += np.dot(gradient_x_xa, beta[a, :])
     
     return np.float(alpha * xi + betasum)

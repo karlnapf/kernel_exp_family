@@ -1,10 +1,10 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import ind_to_ai
-from kernel_exp_family.estimators.full.gaussian import compute_h,\
+from kernel_exp_family.estimators.full.gaussian import compute_h, \
     compute_xi_norm_2, compute_first_row, compute_RHS
-from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component,\
-    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
-    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessians,\
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component, \
+    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component, \
+    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessians, \
     gaussian_kernel_hessian_entry
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
@@ -15,20 +15,20 @@ def compute_first_row_without_storing(X, h, n, lmbda, sigma):
     result = np.zeros(h.shape)
     for ind1 in range(len(result)):
         a, i = ind_to_ai(ind1, d)
-        for ind2 in range(N_x*d):
+        for ind2 in range(N_x * d):
             b, j = ind_to_ai(ind2, d)
             H = gaussian_kernel_hessian_entry(X[a], X[b], i, j, sigma)
             result[ind1] += h[ind2] * H
     result /= n
-    result += lmbda*h
+    result += lmbda * h
     
     return result
 
 def compute_lower_right_submatrix_component(data, lmbda, idx1, idx2, sigma):
     n, d = data.shape
 
-    a,i = ind_to_ai(idx1, d)
-    b,j = ind_to_ai(idx2, d)
+    a, i = ind_to_ai(idx1, d)
+    b, j = ind_to_ai(idx2, d)
     x_a = data[a]
     x_b = data[b]
     G_a_b_i_j = gaussian_kernel_hessian_entry(x_a, x_b, i, j, sigma)
@@ -39,7 +39,7 @@ def compute_lower_right_submatrix_component(data, lmbda, idx1, idx2, sigma):
         for idx_d in range(d):
             G1 = gaussian_kernel_hessian_entry(x_a, x_n, i, idx_d, sigma)
             G2 = gaussian_kernel_hessian_entry(x_n, x_b, idx_d, j, sigma)
-            G_sum += G1*G2
+            G_sum += G1 * G2
 
     return G_sum / n + lmbda * G_a_b_i_j
 
@@ -50,15 +50,15 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     h = compute_h(X, sigma).reshape(-1)
     xi_norm_2 = compute_xi_norm_2(X, sigma)
     
-    A_mn = np.zeros((m + 1, N*D + 1))
-    A_mn[0,0] = np.dot(h, h)/N + lmbda*xi_norm_2
+    A_mn = np.zeros((m + 1, N * D + 1))
+    A_mn[0, 0] = np.dot(h, h) / N + lmbda * xi_norm_2
     
     for row_idx in range(len(inds)):
-        for col_idx in range(N*D):
-            A_mn[1+ row_idx,1+ col_idx] = compute_lower_right_submatrix_component(X, lmbda, inds[row_idx], col_idx, sigma)
+        for col_idx in range(N * D):
+            A_mn[1 + row_idx, 1 + col_idx] = compute_lower_right_submatrix_component(X, lmbda, inds[row_idx], col_idx, sigma)
     
     A_mn[0, 1:] = compute_first_row_without_storing(X, h, N, lmbda, sigma)
-    A_mn[1:, 0] = A_mn[0,inds+1]
+    A_mn[1:, 0] = A_mn[0, inds + 1]
     
     b = compute_RHS(h, xi_norm_2)
     
@@ -103,7 +103,7 @@ def grad(x, X, sigma, alpha, beta, inds):
     
     ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
     
-    for ind, (a,i) in enumerate(ais):
+    for ind, (a, i) in enumerate(ais):
         x_a = X[a]
         xi_gradient_mat_component = gaussian_kernel_dx_i_dx_i_dx_j_component(x, x_a, i, sigma)
         left_arg_hessian_component = gaussian_kernel_dx_i_dx_j_component(x, x_a, i, sigma)

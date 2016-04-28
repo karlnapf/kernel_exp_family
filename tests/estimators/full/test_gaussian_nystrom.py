@@ -2,14 +2,14 @@ from nose.tools import assert_almost_equal
 from numpy.testing.utils import assert_allclose
 
 import kernel_exp_family.estimators.full.develop.gaussian as gaussian_full_develop
-from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive,\
-    grad_naive, build_system_nystrom_naive_from_full,\
+from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive, \
+    grad_naive, build_system_nystrom_naive_from_full, \
     build_system_nystrom_naive_from_all_hessians
-from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian,\
+from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian, \
     compute_lower_right_submatrix, compute_first_row, compute_h
 import kernel_exp_family.estimators.full.gaussian as gaussian_full
-from kernel_exp_family.estimators.full.gaussian_nystrom import KernelExpFullNystromGaussian,\
-    fit, log_pdf, grad, build_system_nystrom,\
+from kernel_exp_family.estimators.full.gaussian_nystrom import KernelExpFullNystromGaussian, \
+    fit, log_pdf, grad, build_system_nystrom, \
     compute_lower_right_submatrix_component, compute_first_row_without_storing
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 import numpy as np
@@ -60,7 +60,7 @@ def test_fit_nystrom_all_inds_equals_fit():
     
     # low accuracy as numerically potentially unstable
     assert_allclose(alpha_full, alpha, rtol=1e-1)
-    assert_allclose(beta_full.reshape(N*D,), beta, rtol=1e-1)
+    assert_allclose(beta_full.reshape(N * D,), beta, rtol=1e-1)
 
 def test_full_pipeline_nystrom_all_inds_equals_full():
     sigma = 3
@@ -68,10 +68,10 @@ def test_full_pipeline_nystrom_all_inds_equals_full():
     N = 10
     D = 2
     
-    X = np.random.randn(N,D)
-    X2 = np.random.randn(N,D)
+    X = np.random.randn(N, D)
+    X2 = np.random.randn(N, D)
     
-    est = KernelExpFullNystromGaussian(sigma, lmbda, D, N, m=N*D)
+    est = KernelExpFullNystromGaussian(sigma, lmbda, D, N, m=N * D)
     est.fit(X)
     est2 = KernelExpFullGaussian(sigma, lmbda, D, N)
     est2.fit(X)
@@ -90,7 +90,7 @@ def test_grad_naive_nystrom_all_inds_equals_grad_naive_full_alpha_equals_0():
     beta_nystrom = beta.flatten()
     inds = np.arange(N * D)
     
-    for x in np.random.randn(N,D):
+    for x in np.random.randn(N, D):
         a = gaussian_full_develop.grad_naive(x, X, sigma, alpha, beta)
         b = grad_naive(x, X, sigma, alpha, beta_nystrom, inds)
         assert_allclose(a, b)
@@ -106,7 +106,7 @@ def test_grad_naive_nystrom_all_inds_equals_grad_naive_full():
     beta_nystrom = beta.flatten()
     inds = np.arange(N * D)
     
-    for x in np.random.randn(N,D):
+    for x in np.random.randn(N, D):
         a = gaussian_full_develop.grad_naive(x, X, sigma, alpha, beta)
         b = grad_naive(x, X, sigma, alpha, beta_nystrom, inds)
         assert_allclose(a, b)
@@ -120,7 +120,7 @@ def test_log_pdf_naive_equals_log_pdf():
     beta = np.random.randn(N, D).flatten()
     inds = np.arange(N * D)
     
-    for x in np.random.randn(N,D):
+    for x in np.random.randn(N, D):
         a = log_pdf_naive(x, X, sigma, alpha, beta, inds)
         b = log_pdf(x, X, sigma, alpha, beta, inds)
         assert_allclose(a, b)
@@ -134,7 +134,7 @@ def test_grad_naive_equals_grad():
     beta = np.random.randn(N, D).flatten()
     inds = np.arange(N * D)
     
-    for x in np.random.randn(N,D):
+    for x in np.random.randn(N, D):
         a = grad_naive(x, X, sigma, alpha, beta, inds)
         b = grad(x, X, sigma, alpha, beta, inds)
         assert_allclose(a, b)
@@ -190,8 +190,8 @@ def test_compute_lower_right_submatrix_component_equals_compute_lower_right_subm
     all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
     A = compute_lower_right_submatrix(all_hessians, N, lmbda)
     
-    for idx1 in range(N*D):
-        for idx2 in range(N*D):
+    for idx1 in range(N * D):
+        for idx2 in range(N * D):
             A_component = compute_lower_right_submatrix_component(X, lmbda, idx1, idx2, sigma)
             assert_allclose(A[idx1, idx2], A_component)
 

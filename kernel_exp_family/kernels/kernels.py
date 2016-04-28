@@ -146,12 +146,12 @@ def gaussian_kernel_hessians(X, Y=None, sigma=1.0):
     all_hessians = None
 
     if Y is None:
-        all_hessians = np.zeros( (N_x*d, N_x*d) )
+        all_hessians = np.zeros((N_x * d, N_x * d))
 
         for a, x_a in enumerate(X):
-            for b, x_b in enumerate(X[0:a+1,:]):
-                r_start,r_end = a*d, a*d+d
-                c_start, c_end = b*d, b*d+d
+            for b, x_b in enumerate(X[0:a + 1, :]):
+                r_start, r_end = a * d, a * d + d
+                c_start, c_end = b * d, b * d + d
                 all_hessians[r_start:r_end, c_start:c_end] = gaussian_kernel_hessian(x_a, x_b, sigma)
                 all_hessians[c_start:c_end, r_start:r_end] = all_hessians[r_start:r_end, c_start:c_end]
 
