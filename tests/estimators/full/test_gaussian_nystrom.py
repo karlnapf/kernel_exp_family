@@ -3,11 +3,15 @@ from numpy.testing.utils import assert_allclose
 
 import kernel_exp_family.estimators.full.develop.gaussian as gaussian_full_develop
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive,\
-    grad_naive, build_system_nystrom_naive
-from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian
+    grad_naive, build_system_nystrom_naive_from_full,\
+    build_system_nystrom_naive_from_all_hessians
+from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian,\
+    compute_lower_right_submatrix, compute_first_row, compute_h
 import kernel_exp_family.estimators.full.gaussian as gaussian_full
 from kernel_exp_family.estimators.full.gaussian_nystrom import KernelExpFullNystromGaussian,\
-    fit, log_pdf, grad, build_system_nystrom
+    fit, log_pdf, grad, build_system_nystrom,\
+    compute_lower_right_submatrix_component, compute_first_row_without_storing
+from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 import numpy as np
 
 
@@ -135,7 +139,7 @@ def test_grad_naive_equals_grad():
         b = grad(x, X, sigma, alpha, beta, inds)
         assert_allclose(a, b)
 
-def test_build_system_nystrom_equals_build_system_nystrom_naive():
+def test_build_system_nystrom_equals_build_system_nystrom_naive_from_full():
     N = 10
     D = 2
     X = np.random.randn(N, D)
@@ -144,8 +148,62 @@ def test_build_system_nystrom_equals_build_system_nystrom_naive():
     inds = np.arange(N * D)
     
     A, b = build_system_nystrom(X, sigma, lmbda, inds)
-    A_naive, b_naive = build_system_nystrom_naive(X, sigma, lmbda, inds)
+    A_naive, b_naive = build_system_nystrom_naive_from_full(X, sigma, lmbda, inds)
     
     assert_allclose(A, A_naive)
     assert_allclose(b, b_naive)
+
+def test_build_system_nystrom_naive_from_all_hessians_equals_build_system_nystrom_naive_from_full():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    inds = np.arange(N * D)
     
+    A, b = build_system_nystrom_naive_from_all_hessians(X, sigma, lmbda, inds)
+    A_naive, b_naive = build_system_nystrom_naive_from_full(X, sigma, lmbda, inds)
+    
+    assert_allclose(A, A_naive)
+    assert_allclose(b, b_naive)
+
+def test_build_system_nystrom_equals_build_system_nystrom_naive_from_all_hessians():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    inds = np.arange(N * D)
+    
+    A, b = build_system_nystrom(X, sigma, lmbda, inds)
+    A_naive, b_naive = build_system_nystrom_naive_from_all_hessians(X, sigma, lmbda, inds)
+    
+    assert_allclose(A, A_naive)
+    assert_allclose(b, b_naive)
+
+def test_compute_lower_right_submatrix_component_equals_compute_lower_right_submatrix():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
+    A = compute_lower_right_submatrix(all_hessians, N, lmbda)
+    
+    for idx1 in range(N*D):
+        for idx2 in range(N*D):
+            A_component = compute_lower_right_submatrix_component(X, lmbda, idx1, idx2, sigma)
+            assert_allclose(A[idx1, idx2], A_component)
+
+def test_compute_first_row_without_storing_equals_compute_first_row():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
+    h = compute_h(X, sigma).reshape(-1)
+    row = compute_first_row(h, all_hessians, N, lmbda)
+    row2 = compute_first_row_without_storing(X, h, N, lmbda, sigma)
+    
+    assert_allclose(row, row2)

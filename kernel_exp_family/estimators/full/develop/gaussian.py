@@ -48,7 +48,6 @@ def compute_lower_right_submatrix_loop(kernel_dx_dy, data, lmbda):
 
     return A
 
-
 def compute_G(kernel_dx_dy, data):
     n, d = data.shape
     G = np.zeros((n, n, d, d))

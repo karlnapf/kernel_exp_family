@@ -14,7 +14,7 @@ from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel,
     gaussian_kernel_dx_dx, gaussian_kernel_dx_dx_dy_dy, gaussian_kernel_dx_i_dx_j, \
     gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_component,\
     gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
-    gaussian_kernel_dx_i_dx_j_component
+    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry
 import numpy as np
 
 
@@ -451,3 +451,15 @@ def test_gaussian_kernel_dx_i_dx_j_component_equals_gaussian_kernel_dx_i_dx_j():
     for i in range(D):
         a = gaussian_kernel_dx_i_dx_j_component(x, y, i, sigma)
         assert_allclose(dx_i_dx_j[i], a)
+
+def test_gaussian_kernel_hessian_entry_equals_gaussian_kernel_hessian():
+    D = 4
+    x = np.random.randn(D)
+    y = np.random.randn(D)
+    sigma = 0.5
+
+    H = gaussian_kernel_hessian(x, y, sigma)
+    for i in range(H.shape[0]):
+        for j in range(H.shape[1]):
+            h = gaussian_kernel_hessian_entry(x, y, i, j, sigma)
+            assert_allclose(H[i,j], h)
