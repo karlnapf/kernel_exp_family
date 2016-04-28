@@ -12,8 +12,8 @@ from kernel_exp_family.kernels.kernels import theano_available, gaussian_kernel,
     rff_feature_map_grad2, rff_feature_map_grad_single, rff_sample_basis, \
     gaussian_kernel_hessian, gaussian_kernel_hessians, gaussian_kernel_dx_dx_dy, \
     gaussian_kernel_dx_dx, gaussian_kernel_dx_dx_dy_dy, gaussian_kernel_dx_i_dx_j, \
-    gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_component,\
-    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component,\
+    gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_component, \
+    gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component, \
     gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry
 import numpy as np
 
@@ -310,31 +310,31 @@ def test_gaussian_kernel_hessian_equals_SE_dx_dy():
     y = np.random.randn(D)
     sigma = 0.5
 
-    H_new = gaussian_kernel_hessian(x,y,sigma)
-    H_old = SE_dx_dy(x.reshape(-1,1), y.reshape(-1,1), np.sqrt(sigma / 2.0))
+    H_new = gaussian_kernel_hessian(x, y, sigma)
+    H_old = SE_dx_dy(x.reshape(-1, 1), y.reshape(-1, 1), np.sqrt(sigma / 2.0))
 
-    assert_close(H_new,H_old)
+    assert_close(H_new, H_old)
 
 def test_gaussian_kernel_hessians_equals_old():
     D = 3
     N = 20
-    X = np.random.randn(N,D)
+    X = np.random.randn(N, D)
     sigma = 0.5
 
-    hessians_new = gaussian_kernel_hessians(X,sigma=sigma)
+    hessians_new = gaussian_kernel_hessians(X, sigma=sigma)
 
     kernel_dx_dy = lambda x, y: SE_dx_dy(x, y, l=np.sqrt(sigma / 2.0))
     hessians_old = compute_all_hessians_old(kernel_dx_dy, X)
 
-    assert_close(hessians_new,hessians_old)
+    assert_close(hessians_new, hessians_old)
 
 def test_gaussian_kernel_hessians_non_symmetric_execute():
     D = 3
     N_x = 20
     N_y = 10
 
-    X = np.random.randn(N_x,D)
-    Y = np.random.randn(N_y,D)
+    X = np.random.randn(N_x, D)
+    Y = np.random.randn(N_y, D)
     sigma = 0.5
 
     gaussian_kernel_hessians(X, Y, sigma)
@@ -345,8 +345,8 @@ def test_gaussian_kernel_dx_dx_dy_equals_SE_dx_dx_dy():
     y = np.random.randn(D)
     sigma = 0.5
 
-    implementation = gaussian_kernel_dx_dx_dy(x,y,sigma)
-    reference = SE_dx_dx_dy(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma/2.0))
+    implementation = gaussian_kernel_dx_dx_dy(x, y, sigma)
+    reference = SE_dx_dx_dy(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma / 2.0))
 
     assert_close(implementation, reference)
 
@@ -357,7 +357,7 @@ def test_gaussian_kernel_dx_dx_equals_SE_dx_dx():
     sigma = 0.5
 
     implementation = gaussian_kernel_dx_dx(x, Y, sigma)
-    reference = SE_dx_dx(x.reshape(-1, 1), Y.T, l=np.sqrt(sigma/2.0))
+    reference = SE_dx_dx(x.reshape(-1, 1), Y.T, l=np.sqrt(sigma / 2.0))
 
     assert_close(implementation, reference.T)
 
@@ -371,7 +371,7 @@ def test_gaussian_kernel_dx_dx_multiple_ys():
     implementation = gaussian_kernel_dx_dx(x, Y, sigma)
     
     for i in range(N):
-        reference = SE_dx_dx(x.reshape(-1, 1), Y[i].reshape(-1,1), l=np.sqrt(sigma/2.0))
+        reference = SE_dx_dx(x.reshape(-1, 1), Y[i].reshape(-1, 1), l=np.sqrt(sigma / 2.0))
         
         assert_close(implementation[i], np.squeeze(reference.T))
 
@@ -381,8 +381,8 @@ def test_gaussian_kernel_dx_dx_dy_dy_equals_SE_dx_dx_dy_dy():
     y = np.random.randn(D)
     sigma = 0.5
 
-    implementation = gaussian_kernel_dx_dx_dy_dy(x,y,sigma)
-    reference = SE_dx_dx_dy_dy(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma/2.0))
+    implementation = gaussian_kernel_dx_dx_dy_dy(x, y, sigma)
+    reference = SE_dx_dx_dy_dy(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma / 2.0))
 
     assert_close(implementation, reference)
 
@@ -392,8 +392,8 @@ def test_gaussian_kernel_dx_i_dx_j_equals_SE_dx_i_dx_j():
     y = np.random.randn(D)
     sigma = 0.5
 
-    implementation = gaussian_kernel_dx_i_dx_j(x,y,sigma)
-    reference = SE_dx_i_dx_j(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma/2.0))
+    implementation = gaussian_kernel_dx_i_dx_j(x, y, sigma)
+    reference = SE_dx_i_dx_j(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma / 2.0))
 
     assert_close(implementation, reference)
 
@@ -403,8 +403,8 @@ def test_gaussian_kernel_dx_i_dx_i_dx_j_equals_SE_dx_i_dx_i_dx_j():
     y = np.random.randn(D)
     sigma = 0.5
 
-    implementation = gaussian_kernel_dx_i_dx_i_dx_j(x,y,sigma)
-    reference = SE_dx_i_dx_i_dx_j(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma/2.0))
+    implementation = gaussian_kernel_dx_i_dx_i_dx_j(x, y, sigma)
+    reference = SE_dx_i_dx_i_dx_j(x.reshape(-1, 1), y.reshape(-1, 1), l=np.sqrt(sigma / 2.0))
 
     assert_close(implementation, reference)
 
@@ -414,7 +414,7 @@ def test_gaussian_kernel_dx_component_equals_grad():
     y = np.random.randn(D)
     sigma = 0.5
 
-    grad = gaussian_kernel_grad(x,np.atleast_2d(y), sigma)[0]
+    grad = gaussian_kernel_grad(x, np.atleast_2d(y), sigma)[0]
     for i in range(D):
         dxi = gaussian_kernel_dx_component(x, y, i, sigma)
         assert_allclose(grad[i], dxi)
@@ -462,4 +462,4 @@ def test_gaussian_kernel_hessian_entry_equals_gaussian_kernel_hessian():
     for i in range(H.shape[0]):
         for j in range(H.shape[1]):
             h = gaussian_kernel_hessian_entry(x, y, i, j, sigma)
-            assert_allclose(H[i,j], h)
+            assert_allclose(H[i, j], h)

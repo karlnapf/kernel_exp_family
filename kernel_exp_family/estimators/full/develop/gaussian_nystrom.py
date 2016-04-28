@@ -1,11 +1,11 @@
-<<<<<<< 8bf3078b4234e5823a9961b25c1556c685500738
 from kernel_exp_family.estimators.full.gaussian import SE_dx_dx, SE_dx,\
     build_system_even_faster
 from kernel_exp_family.estimators.full.gaussian import build_system
 from kernel_exp_family.estimators.full.gaussian import build_system, compute_h,\
+from kernel_exp_family.estimators.full.gaussian import build_system, compute_h, \
     compute_xi_norm_2, compute_first_row, compute_RHS
-from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
-    gaussian_kernel_grad, gaussian_kernel_dx_i_dx_i_dx_j,\
+from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx, \
+    gaussian_kernel_grad, gaussian_kernel_dx_i_dx_i_dx_j, \
     gaussian_kernel_dx_i_dx_j, gaussian_kernel_hessians
 import numpy as np
 
@@ -18,13 +18,13 @@ def build_system_nystrom_naive_from_all_hessians(X, sigma, lmbda, inds):
     xi_norm_2 = compute_xi_norm_2(X, sigma)
     
     A_mn = np.zeros((m + 1, n * d + 1))
-    A_mn[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
+    A_mn[0, 0] = np.dot(h, h) / n + lmbda * xi_norm_2
     
-    G_nm = np.dot(all_hessians[inds, :],all_hessians)/n + lmbda*all_hessians[inds, :]
+    G_nm = np.dot(all_hessians[inds, :], all_hessians) / n + lmbda * all_hessians[inds, :]
     A_mn[1:, 1:] = G_nm
     
     A_mn[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
-    A_mn[1:, 0] = A_mn[0,inds+1]
+    A_mn[1:, 0] = A_mn[0, inds + 1]
     
     b = compute_RHS(h, xi_norm_2)
     
@@ -33,8 +33,8 @@ def build_system_nystrom_naive_from_all_hessians(X, sigma, lmbda, inds):
 def build_system_nystrom_naive_from_full(X, sigma, lmbda, inds):
     A, b = build_system(X, sigma, lmbda)
     
-    inds_with_xi = np.zeros(len(inds)+1)
-    inds_with_xi[1:] = (inds+1)
+    inds_with_xi = np.zeros(len(inds) + 1)
+    inds_with_xi[1:] = (inds + 1)
     inds_with_xi = inds_with_xi.astype(np.int)
     
     A_nm = A[:, inds_with_xi]
@@ -45,7 +45,7 @@ def ind_to_ai(ind, D):
     """
     For a given row index of the A matrix, return corresponding data and component index
     """
-    return ind/D, ind%D
+    return ind / D, ind % D
 
 def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     N, D = X.shape
@@ -55,7 +55,7 @@ def log_pdf_naive(x, X, sigma, alpha, beta, inds):
     
     ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
     
-    for ind, (a,i) in enumerate(ais):
+    for ind, (a, i) in enumerate(ais):
         x_a = np.atleast_2d(X[a, :])
         gradient_x_xa = np.squeeze(gaussian_kernel_grad(x, x_a, sigma))
         xi_grad = np.squeeze(gaussian_kernel_dx_dx(x, x_a, sigma))
@@ -73,7 +73,7 @@ def grad_naive(x, X, sigma, alpha, beta, inds):
     
     ais = [ind_to_ai(ind, D) for ind in range(len(inds))]
     
-    for ind, (a,i) in enumerate(ais):
+    for ind, (a, i) in enumerate(ais):
         x_a = X[a]
         xi_gradient_mat = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
         left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
