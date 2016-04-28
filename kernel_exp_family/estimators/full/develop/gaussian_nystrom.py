@@ -1,10 +1,32 @@
-from kernel_exp_family.estimators.full.gaussian import build_system
+from kernel_exp_family.estimators.full.gaussian import build_system, compute_h,\
+    compute_xi_norm_2, compute_first_row, compute_RHS
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_dx,\
     gaussian_kernel_grad, gaussian_kernel_dx_i_dx_i_dx_j,\
-    gaussian_kernel_dx_i_dx_j
+    gaussian_kernel_dx_i_dx_j, gaussian_kernel_hessians
 import numpy as np
 
-def build_system_nystrom_naive(X, sigma, lmbda, inds):
+def build_system_nystrom_naive_from_all_hessians(X, sigma, lmbda, inds):
+    n, d = X.shape
+    m = len(inds)
+
+    h = compute_h(X, sigma).reshape(-1)
+    all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
+    xi_norm_2 = compute_xi_norm_2(X, sigma)
+    
+    A_mn = np.zeros((m + 1, n * d + 1))
+    A_mn[0,0] = np.dot(h, h)/n + lmbda*xi_norm_2
+    
+    G_nm = np.dot(all_hessians[inds, :],all_hessians)/n + lmbda*all_hessians[inds, :]
+    A_mn[1:, 1:] = G_nm
+    
+    A_mn[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
+    A_mn[1:, 0] = A_mn[0,inds+1]
+    
+    b = compute_RHS(h, xi_norm_2)
+    
+    return A_mn, b
+
+def build_system_nystrom_naive_from_full(X, sigma, lmbda, inds):
     A, b = build_system(X, sigma, lmbda)
     
     inds_with_xi = np.zeros(len(inds)+1)
