@@ -70,6 +70,10 @@ def build_system_nystrom(X, sigma, lmbda, inds):
         for col_idx in range(N * D):
             A_mn[1 + row_idx, 1 + col_idx] = compute_lower_right_submatrix_component(X, lmbda, inds[row_idx], col_idx, sigma)
     
+    ## compute in parallel with joblib
+    #results = Parallel(n_jobs=4)(delayed(compute_lower_right_submatrix_component)(X, lmbda, inds[row_idx], col_idx, sigma) for (row_idx, col_idx) in row_col_ind_pairs)
+    
+    
     A_mn[0, 1:] = compute_first_row_without_storing(X, h, N, lmbda, sigma)
     A_mn[1:, 0] = A_mn[0, inds + 1]
     
