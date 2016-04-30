@@ -4,7 +4,8 @@ from numpy.testing.utils import assert_allclose
 import kernel_exp_family.estimators.full.develop.gaussian as gaussian_full_develop
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive, \
     grad_naive, build_system_nystrom_naive_from_full, \
-    build_system_nystrom_naive_from_all_hessians
+    build_system_nystrom_naive_from_all_hessians,\
+    build_system_nystrom_modular_slow
 from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian, \
     compute_lower_right_submatrix, compute_first_row, compute_h
 import kernel_exp_family.estimators.full.gaussian as gaussian_full
@@ -207,3 +208,17 @@ def test_compute_first_row_without_storing_equals_compute_first_row():
     row2 = compute_first_row_without_storing(X, h, N, lmbda, sigma)
     
     assert_allclose(row, row2)
+    
+def test_build_system_nystrom_modular_slow_equals_build_system_nystrom():
+    N = 10
+    D = 2
+    X = np.random.randn(N, D)
+    sigma = 1.
+    lmbda = 0.1
+    inds = np.arange(N * D)
+    
+    A, b = build_system_nystrom(X, sigma, lmbda, inds)
+    A_naive, b_naive = build_system_nystrom_modular_slow(X, sigma, lmbda, inds)
+    
+    assert_allclose(A, A_naive)
+    assert_allclose(b, b_naive)

@@ -1,5 +1,4 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.develop.gaussian_nystrom import ind_to_ai
 from kernel_exp_family.estimators.full.gaussian import compute_h, \
     compute_xi_norm_2, compute_RHS
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component, \
@@ -8,6 +7,11 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component, \
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
+def ind_to_ai(ind, D):
+    """
+    For a given row index of the A matrix, return corresponding data and component index
+    """
+    return ind / D, ind % D
 
 <<<<<<< 8bf3078b4234e5823a9961b25c1556c685500738
 def nystrom(X, sigma, lmbda, inds):
@@ -57,6 +61,10 @@ def compute_lower_right_submatrix_component(data, lmbda, idx1, idx2, sigma):
 >>>>>>> working version of memory-free nystrom version
 
 def build_system_nystrom(X, sigma, lmbda, inds):
+    """
+    This is a "flattened" implementation of build_system_nystrom_modular_slow
+    Completely unreadable, but easier to Cythonise
+    """
     N, D = X.shape
     m = len(inds)
 
@@ -68,13 +76,58 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     
     for row_idx in range(len(inds)):
         for col_idx in range(N * D):
-            A_mn[1 + row_idx, 1 + col_idx] = compute_lower_right_submatrix_component(X, lmbda, inds[row_idx], col_idx, sigma)
+            # ind_to_ai
+            a, i = row_idx / D, row_idx % D
+            b, j = col_idx / D, col_idx % D
+            x_a = X[a]
+            x_b = X[b]
+            
+            # gaussian_kernel_hessian_entry
+            k = np.exp(-np.sum((x_a-x_b)**2) / sigma)
+            differences_i = x_b[i] - x_a[i]
+            differences_j = x_b[j] - x_a[j]
+            ridge = 0.
+            if i==j:
+                ridge = 2./sigma
+            G_a_b_i_j = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+            
+            G_sum = 0.
+            for idx_n in range(N):
+                x_n = X[idx_n]
+                for idx_d in range(D):
+                    # G1 = gaussian_kernel_hessian_entry(x_a, x_n, i, idx_d, sigma)
+                    k = np.exp(-np.sum((x_a-x_n)**2) / sigma)
+                    differences_i = x_n[i] - x_a[i]
+                    differences_j = x_n[idx_d] - x_a[idx_d]
+                    ridge = 0.
+                    if i==idx_d:
+                        ridge = 2./sigma
+                    G1 = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+                    
+                    # G2 = gaussian_kernel_hessian_entry(x_n, x_b, idx_d, j, sigma)
+                    k = np.exp(-np.sum((x_n-x_b)**2) / sigma)
+                    differences_i = x_b[idx_d] - x_n[idx_d]
+                    differences_j = x_b[j] - x_n[j]
+                    ridge = 0.
+                    if idx_d==j:
+                        ridge = 2./sigma
+                    G2 = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+                    
+                    G_sum += G1 * G2
+        
+            entry = G_sum / N + lmbda * G_a_b_i_j
+            A_mn[1 + row_idx, 1 + col_idx] = entry
     
-    ## compute in parallel with joblib
-    #results = Parallel(n_jobs=4)(delayed(compute_lower_right_submatrix_component)(X, lmbda, inds[row_idx], col_idx, sigma) for (row_idx, col_idx) in row_col_ind_pairs)
-    
-    
-    A_mn[0, 1:] = compute_first_row_without_storing(X, h, N, lmbda, sigma)
+    # A_mn[0, 1:] = compute_first_row_without_storing(X, h, N, lmbda, sigma)
+    for ind1 in range(m):
+        a, i = ind_to_ai(ind1, D)
+        for ind2 in range(N * D):
+            b, j = ind_to_ai(ind2, D)
+            H = gaussian_kernel_hessian_entry(X[a], X[b], i, j, sigma)
+            A_mn[0, 1:][ind1] += h[ind2] * H
+    A_mn[0, 1:] /= N
+    A_mn[0, 1:] += lmbda * h
+
     A_mn[1:, 0] = A_mn[0, inds + 1]
     
     b = compute_RHS(h, xi_norm_2)
