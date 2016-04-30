@@ -132,11 +132,13 @@ def gaussian_kernel_hessian_entry(x, y, i, j, sigma=1.):
     x_2d = x[np.newaxis,:]
     y_2d = y[np.newaxis,:]
     k = gaussian_kernel(x_2d, y_2d, sigma)[0]
-    differences = y - x
+    differences_i = y[i] - x[i]
+    differences_j = y[j] - x[j]
+    
     ridge = 0.
     if i==j:
         ridge = 2./sigma
-    H = k*(ridge - 4*(differences[i]*differences[j])/sigma**2)
+    H = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
     return H
 
 def gaussian_kernel_hessians(X, Y=None, sigma=1.0):
