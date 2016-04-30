@@ -97,6 +97,9 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     A_mn = np.zeros((m + 1, N * D + 1))
     A_mn[0, 0] = np.dot(h, h) / N + lmbda * xi_norm_2
     
+    # for row_idx in range(len(inds)):
+    #     for col_idx in range(N * D):
+    #         A_mn[1 + row_idx, 1 + col_idx] = compute_lower_right_submatrix_component(X, lmbda, inds[row_idx], col_idx, sigma)
     for row_idx in range(len(inds)):
         for col_idx in range(N * D):
             # ind_to_ai
