@@ -1,10 +1,7 @@
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.full.gaussian import compute_h, \
-    compute_xi_norm_2, compute_RHS
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component, \
     gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component, \
-    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry,\
-    gaussian_kernel_dx_dx_dy
+    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
 
@@ -76,23 +73,23 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     for b, x_b in enumerate(X):
         for _, x_a in enumerate(X):
 #             h[b, :] += np.sum(gaussian_kernel_dx_dx_dy(x_a, x_b, sigma), axis=0)
-            k = np.exp(-np.sum((x_b-x_a)**2) / sigma)
-            term1 = np.sum(k * np.outer((x_a - x_b) ** 2, (x_a - x_b)) * (2/sigma)**3, axis=0)
-            term2 = np.sum(k * 2 * np.diag((x_a - x_b)) * (2/sigma)**2, axis=0)
-            term3 = np.sum(k * np.tile((x_a - x_b), [D,1]) * (2/sigma)**2, axis=0)
+            k = np.exp(-np.sum((x_b - x_a) ** 2) / sigma)
+            term1 = np.sum(k * np.outer((x_a - x_b) ** 2, (x_a - x_b)) * (2 / sigma) ** 3, axis=0)
+            term2 = np.sum(k * 2 * np.diag((x_a - x_b)) * (2 / sigma) ** 2, axis=0)
+            term3 = np.sum(k * np.tile((x_a - x_b), [D, 1]) * (2 / sigma) ** 2, axis=0)
             h[b, :] += term1 - term2 - term3
-    h = (h/N).reshape(-1)
+    h = (h / N).reshape(-1)
     
     # xi_norm_2 = compute_xi_norm_2(X, sigma)
     xi_norm_2 = 0
     for _, x_a in enumerate(X):
         for _, x_b in enumerate(X):
             # xi_norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
-            k = np.exp(-np.sum((x_b-x_a)**2) / sigma)
-            term1 = np.sum(k * np.outer((x_a - x_b), (x_a - x_b)) ** 2 * (2.0/sigma)**4)
-            term2 = np.sum(k * 6 * np.diag((x_a - x_b) ** 2) * (2.0/sigma)**3)  # diagonal (x-y)
-            term3 = np.sum((1 - np.eye(D)) * k * np.tile((x_a - x_b), [D, 1]).T ** 2 * (2.0/sigma)**3)  # (x_i-y_i)^2 off-diagonal 
-            term5 = np.sum(k * (1 + 2 * np.eye(D)) * (2.0/sigma)**2)
+            k = np.exp(-np.sum((x_b - x_a) ** 2) / sigma)
+            term1 = np.sum(k * np.outer((x_a - x_b), (x_a - x_b)) ** 2 * (2.0 / sigma) ** 4)
+            term2 = np.sum(k * 6 * np.diag((x_a - x_b) ** 2) * (2.0 / sigma) ** 3)  # diagonal (x-y)
+            term3 = np.sum((1 - np.eye(D)) * k * np.tile((x_a - x_b), [D, 1]).T ** 2 * (2.0 / sigma) ** 3)  # (x_i-y_i)^2 off-diagonal 
+            term5 = np.sum(k * (1 + 2 * np.eye(D)) * (2.0 / sigma) ** 2)
             xi_norm_2 += term1 - term2 - term3 - term3 + term5
             
     xi_norm_2 /= N ** 2
@@ -109,35 +106,35 @@ def build_system_nystrom(X, sigma, lmbda, inds):
             x_b = X[b]
             
             # gaussian_kernel_hessian_entry
-            k = np.exp(-np.sum((x_a-x_b)**2) / sigma)
+            k = np.exp(-np.sum((x_a - x_b) ** 2) / sigma)
             differences_i = x_b[i] - x_a[i]
             differences_j = x_b[j] - x_a[j]
             ridge = 0.
-            if i==j:
-                ridge = 2./sigma
-            G_a_b_i_j = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+            if i == j:
+                ridge = 2. / sigma
+            G_a_b_i_j = k * (ridge - 4 * (differences_i * differences_j) / sigma ** 2)
             
             G_sum = 0.
             for idx_n in range(N):
                 x_n = X[idx_n]
                 for idx_d in range(D):
                     # G1 = gaussian_kernel_hessian_entry(x_a, x_n, i, idx_d, sigma)
-                    k = np.exp(-np.sum((x_a-x_n)**2) / sigma)
+                    k = np.exp(-np.sum((x_a - x_n) ** 2) / sigma)
                     differences_i = x_n[i] - x_a[i]
                     differences_j = x_n[idx_d] - x_a[idx_d]
                     ridge = 0.
-                    if i==idx_d:
-                        ridge = 2./sigma
-                    G1 = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+                    if i == idx_d:
+                        ridge = 2. / sigma
+                    G1 = k * (ridge - 4 * (differences_i * differences_j) / sigma ** 2)
                     
                     # G2 = gaussian_kernel_hessian_entry(x_n, x_b, idx_d, j, sigma)
-                    k = np.exp(-np.sum((x_n-x_b)**2) / sigma)
+                    k = np.exp(-np.sum((x_n - x_b) ** 2) / sigma)
                     differences_i = x_b[idx_d] - x_n[idx_d]
                     differences_j = x_b[j] - x_n[j]
                     ridge = 0.
-                    if idx_d==j:
-                        ridge = 2./sigma
-                    G2 = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+                    if idx_d == j:
+                        ridge = 2. / sigma
+                    G2 = k * (ridge - 4 * (differences_i * differences_j) / sigma ** 2)
                     
                     G_sum += G1 * G2
         
