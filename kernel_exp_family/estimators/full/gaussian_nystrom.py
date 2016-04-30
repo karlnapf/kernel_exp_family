@@ -3,9 +3,11 @@ from kernel_exp_family.estimators.full.gaussian import compute_h, \
     compute_xi_norm_2, compute_RHS
 from kernel_exp_family.kernels.kernels import gaussian_kernel_dx_component, \
     gaussian_kernel_dx_dx_component, gaussian_kernel_dx_i_dx_i_dx_j_component, \
-    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry
+    gaussian_kernel_dx_i_dx_j_component, gaussian_kernel_hessian_entry,\
+    gaussian_kernel_dx_dx_dy
 from kernel_exp_family.tools.assertions import assert_array_shape
 import numpy as np
+
 
 def ind_to_ai(ind, D):
     """
@@ -48,14 +50,38 @@ def compute_lower_right_submatrix_component(data, lmbda, idx1, idx2, sigma):
 
 def build_system_nystrom(X, sigma, lmbda, inds):
     """
-    This is a "flattened" implementation of build_system_nystrom_modular_slow
-    Completely unreadable, but easier to Cythonise
+    This is a "flattened" implementation of build_system_nystrom_modular_slow.
+    This means that all function calls are simply copied in this function.
+    Completely unreadable, but (maybe) easier to Cythonise, thus a bit faster.
     """
     N, D = X.shape
     m = len(inds)
 
-    h = compute_h(X, sigma).reshape(-1)
-    xi_norm_2 = compute_xi_norm_2(X, sigma)
+    # h = compute_h(X, sigma).reshape(-1)
+    h = np.zeros((N, D))
+    for b, x_b in enumerate(X):
+        for _, x_a in enumerate(X):
+#             h[b, :] += np.sum(gaussian_kernel_dx_dx_dy(x_a, x_b, sigma), axis=0)
+            k = np.exp(-np.sum((x_b-x_a)**2) / sigma)
+            term1 = np.sum(k * np.outer((x_a - x_b) ** 2, (x_a - x_b)) * (2/sigma)**3, axis=0)
+            term2 = np.sum(k * 2 * np.diag((x_a - x_b)) * (2/sigma)**2, axis=0)
+            term3 = np.sum(k * np.tile((x_a - x_b), [D,1]) * (2/sigma)**2, axis=0)
+            h[b, :] += term1 - term2 - term3
+    h = (h/N).reshape(-1)
+    
+    # xi_norm_2 = compute_xi_norm_2(X, sigma)
+    xi_norm_2 = 0
+    for _, x_a in enumerate(X):
+        for _, x_b in enumerate(X):
+            # xi_norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
+            k = np.exp(-np.sum((x_b-x_a)**2) / sigma)
+            term1 = np.sum(k * np.outer((x_a - x_b), (x_a - x_b)) ** 2 * (2.0/sigma)**4)
+            term2 = np.sum(k * 6 * np.diag((x_a - x_b) ** 2) * (2.0/sigma)**3)  # diagonal (x-y)
+            term3 = np.sum((1 - np.eye(D)) * k * np.tile((x_a - x_b), [D, 1]).T ** 2 * (2.0/sigma)**3)  # (x_i-y_i)^2 off-diagonal 
+            term5 = np.sum(k * (1 + 2 * np.eye(D)) * (2.0/sigma)**2)
+            xi_norm_2 += term1 - term2 - term3 - term3 + term5
+            
+    xi_norm_2 /= N ** 2
     
     A_mn = np.zeros((m + 1, N * D + 1))
     A_mn[0, 0] = np.dot(h, h) / N + lmbda * xi_norm_2
@@ -116,7 +142,10 @@ def build_system_nystrom(X, sigma, lmbda, inds):
 
     A_mn[1:, 0] = A_mn[0, inds + 1]
     
-    b = compute_RHS(h, xi_norm_2)
+    # b = compute_RHS(h, xi_norm_2)
+    b = np.zeros(h.size + 1)
+    b[0] = -xi_norm_2
+    b[1:] = -h.reshape(-1)
     
     return A_mn, b
 
