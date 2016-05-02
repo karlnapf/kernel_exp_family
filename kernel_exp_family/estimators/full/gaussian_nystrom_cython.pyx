@@ -1,4 +1,6 @@
 import numpy as np
+
+
 cimport numpy as np
 cimport cython
 
@@ -17,14 +19,14 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
     cdef int N = X.shape[0]
     cdef int D = X.shape[1]
     cdef m = inds.shape[0]
-    cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] term1, term2, term3
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim = 1] term1, term2, term3
     cdef float k, term_a, term_b, term_c, term_d, entry, ridge, differences_i, differences_j, G_sum, G_a_b_i_j, G1, G2
     cdef int a, b, i, j
     
-    cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] h_mat
-    cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] h_vec
-    cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] A_mn
-    cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] b_vec
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim = 2] h_mat
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim = 1] h_vec
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim = 2] A_mn
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim = 1] b_vec
 
     # h = compute_h(X, sigma).reshape(-1)
     h_mat = np.zeros((N, D), dtype=DTYPE)
@@ -66,8 +68,8 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
             
             # gaussian_kernel_hessian_entry
             k = np.exp(-np.sum((X[a] - X[b]) ** 2) / sigma)
-            differences_i = X[b,i] - X[a,i]
-            differences_j = X[b,j] - X[a,j]
+            differences_i = X[b, i] - X[a, i]
+            differences_j = X[b, j] - X[a, j]
             ridge = 0.
             if i == j:
                 ridge = 2. / sigma
@@ -78,8 +80,8 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
                 for idx_d in range(D):
                     # G1 = gaussian_kernel_hessian_entry(x_a, x_n, i, idx_d, sigma)
                     k = np.exp(-np.sum((X[a] - X[idx_n]) ** 2) / sigma)
-                    differences_i = X[idx_n,i] - X[a,i]
-                    differences_j = X[idx_n,idx_d] - X[a,idx_d]
+                    differences_i = X[idx_n, i] - X[a, i]
+                    differences_j = X[idx_n, idx_d] - X[a, idx_d]
                     ridge = 0.
                     if i == idx_d:
                         ridge = 2. / sigma
@@ -87,8 +89,8 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
                     
                     # G2 = gaussian_kernel_hessian_entry(x_n, x_b, idx_d, j, sigma)
                     k = np.exp(-np.sum((X[idx_n] - X[b]) ** 2) / sigma)
-                    differences_i = X[b,idx_d] - X[idx_n, idx_d]
-                    differences_j = X[b,j] - X[idx_n, j]
+                    differences_i = X[b, idx_d] - X[idx_n, idx_d]
+                    differences_j = X[b, j] - X[idx_n, j]
                     ridge = 0.
                     if idx_d == j:
                         ridge = 2. / sigma
@@ -106,14 +108,14 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
             b, j = col_idx / D, col_idx % D
             # H = gaussian_kernel_hessian_entry(X[a], X[b], i, j, sigma)
             k = np.exp(-np.sum((X[a] - X[b]) ** 2) / sigma)
-            differences_i = X[b,i] - X[a,i]
-            differences_j = X[b,j] - X[a,j]
+            differences_i = X[b, i] - X[a, i]
+            differences_j = X[b, j] - X[a, j]
             ridge = 0.
-            if i==j:
-                ridge = 2./sigma
-            H = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+            if i == j:
+                ridge = 2. / sigma
+            H = k * (ridge - 4 * (differences_i * differences_j) / sigma ** 2)
             
-            A_mn[0, ind1+1] += h_vec[ind2] * H
+            A_mn[0, ind1 + 1] += h_vec[ind2] * H
     A_mn[0, 1:] /= N
     A_mn[0, 1:] += lmbda * h_vec
 
