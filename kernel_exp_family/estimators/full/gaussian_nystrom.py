@@ -146,10 +146,21 @@ def build_system_nystrom(X, sigma, lmbda, inds):
     
     # A_mn[0, 1:] = compute_first_row_without_storing(X, h, N, lmbda, sigma)
     for ind1 in range(m):
-        a, i = ind_to_ai(ind1, D)
+        #a, i = ind_to_ai(ind1, D)
+        a, i = row_idx / D, row_idx % D
         for ind2 in range(N * D):
-            b, j = ind_to_ai(ind2, D)
-            H = gaussian_kernel_hessian_entry(X[a], X[b], i, j, sigma)
+            #b, j = ind_to_ai(ind2, D)
+            b, j = col_idx / D, col_idx % D
+            
+            # H = gaussian_kernel_hessian_entry(X[a], X[b], i, j, sigma)
+            k = np.exp(-np.sum((X[a] - X[b]) ** 2) / sigma)
+            differences_i = X[b,i] - X[a,i]
+            differences_j = X[b,j] - X[a,j]
+            ridge = 0.
+            if i==j:
+                ridge = 2./sigma
+            H = k*(ridge - 4*(differences_i*differences_j)/sigma**2)
+            
             A_mn[0, 1:][ind1] += h[ind2] * H
     A_mn[0, 1:] /= N
     A_mn[0, 1:] += lmbda * h
