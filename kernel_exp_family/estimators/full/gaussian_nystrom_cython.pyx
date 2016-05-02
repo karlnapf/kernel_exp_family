@@ -29,7 +29,7 @@ def build_system_nystrom(np.ndarray[DTYPE_FLOAT_t, ndim=2] X, np.float sigma, np
     # h = compute_h(X, sigma).reshape(-1)
     h_mat = np.zeros((N, D), dtype=DTYPE)
     for b in range(X.shape[0]):
-        for a in enumerate(X.shape[0]):
+        for a in range(X.shape[0]):
 #             h[b, :] += np.sum(gaussian_kernel_dx_dx_dy(x_a, x_b, sigma), axis=0)
             k = np.exp(-np.sum((X[b] - X[a]) ** 2) / sigma)
             term1 = np.sum(k * np.outer((X[a] - X[b]) ** 2, (X[a] - X[b])) * (2 / sigma) ** 3, axis=0)
