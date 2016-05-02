@@ -4,7 +4,7 @@ from numpy.testing.utils import assert_allclose
 import kernel_exp_family.estimators.full.develop.gaussian as gaussian_full_develop
 from kernel_exp_family.estimators.full.develop.gaussian_nystrom import log_pdf_naive, \
     grad_naive, build_system_nystrom_naive_from_full, \
-    build_system_nystrom_naive_from_all_hessians,\
+    build_system_nystrom_naive_from_all_hessians, \
     build_system_nystrom_modular_slow
 from kernel_exp_family.estimators.full.gaussian import KernelExpFullGaussian, \
     compute_lower_right_submatrix, compute_first_row, compute_h
