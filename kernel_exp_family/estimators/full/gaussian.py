@@ -4,7 +4,8 @@ from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians, \
     gaussian_kernel_dx_dx_dy, gaussian_kernel_dx_dx_dy_dy, gaussian_kernel_grad, \
-    gaussian_kernel_dx_dx, gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_i_dx_j
+    gaussian_kernel_dx_dx, gaussian_kernel_dx_i_dx_i_dx_j, gaussian_kernel_dx_i_dx_j, \
+    gaussian_kernel_dx_i_dx_i_dx_j_dx_j
 
 import numpy as np
 
@@ -99,6 +100,36 @@ def grad(x, X, sigma, alpha, beta):
 
     return alpha * xi_grad + betasum_grad
 
+
+def second_order_grad(x, X, sigma, alpha, beta):
+    """ Computes $\frac{\partial^2 log p(x)}{\partial x_i^2} """
+    N, D = X.shape
+    assert_array_shape(x, ndim=1, dims={0: D})
+
+    xi_grad = 0
+    betasum_grad = 0
+    for a, x_a in enumerate(X):
+        xi_grad += np.sum(gaussian_kernel_dx_i_dx_i_dx_j_dx_j(x, x_a, sigma),
+                          axis=0) / N
+        left_arg_hessian = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
+        betasum_grad += beta[a, :].dot(left_arg_hessian)
+
+    return alpha * xi_grad + betasum_grad
+
+
+def compute_objective(X_test, X_train, sigma, alpha, beta):
+    N_test, D = X_test.shape
+
+    objective = 0.0
+
+    for a, x_a in enumerate(X_test):
+        g = grad(x_a, X_train, sigma, alpha, beta)
+        g2 = second_order_grad(x_a, X_train, sigma, alpha, beta)
+        objective += (0.5 * np.dot(g, g) + np.dot(g2, g2)) / N_test
+
+    return objective
+
+
 class KernelExpFullGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, D, N):
         self.sigma = sigma
@@ -138,7 +169,7 @@ class KernelExpFullGaussian(EstimatorBase):
     
     def objective(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        return 0.
+        return compute_objective(X, self.X, self.sigma, self.alpha, self.beta)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']

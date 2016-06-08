@@ -7,19 +7,17 @@ from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_rig
     grad_naive
 from kernel_exp_family.estimators.full.gaussian import build_system, \
     compute_RHS, log_pdf, compute_lower_right_submatrix,\
-    compute_h, grad
+    compute_h, grad, compute_objective, second_order_grad
 from kernel_exp_family.kernels.develop.kernels import SE_dx_dy, SE_dx_dx_dy
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 import numpy as np
 
 
-def setup():
+def setup(N=10, D=3):
     """ Generates some data and parameters """
     sigma = np.random.randn()**2
     l = np.sqrt(np.float(sigma) / 2)
     lmbda = np.random.randn()**2
-    N = 10
-    D = 2
 
     mean = np.random.randn(D)
     cov = np.random.rand(D,D)
@@ -112,3 +110,26 @@ def test_compute_h_equals_old_interface():
     implementation = compute_h(data, sigma)
     
     assert_close(reference, implementation)
+
+
+def test_second_order_grad_execute():
+    data, l, sigma, lmbda = setup()
+    N, D = data.shape
+    x = np.random.randn(D)
+
+    alpha = np.random.randn()
+    beta = np.random.randn(N, D)
+
+    second_order_grad(x, data, sigma, alpha, beta)
+
+
+def test_compute_objective_execute():
+    X_train, _, sigma, _ = setup(10, 3)
+    X_test, _, _, _ = setup(5, 3)
+
+    N, D = X_train.shape
+
+    alpha = np.random.randn()
+    beta = np.random.randn(N, D)
+
+    compute_objective(X_test, X_train, sigma, alpha, beta)
