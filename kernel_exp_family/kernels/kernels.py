@@ -291,6 +291,26 @@ def gaussian_kernel_dx_i_dx_i_dx_j_component(x, y, ell, sigma=1.):
 
     return (term1 - term2 - term3)[ell]
 
+def gaussian_kernel_dx_i_dx_i_dx_j_dx_j(x,y, sigma=1.):
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    d = x.size
+
+    pairwise_dist_squared = np.outer((y-x)**2, (y-x)**2)
+    row_repeated_squared_distances = np.tile((y-x)**2, [d,1])
+
+    x_2d = x[np.newaxis,:]
+    y_2d = y[np.newaxis,:]
+    k = gaussian_kernel(x_2d, y_2d, sigma)
+
+    term1 = pairwise_dist_squared * (2.0/sigma)**4
+    term2 = row_repeated_squared_distances * (2.0/sigma)**3
+    term3 = term2.T
+    term4 = np.diag((y-x)**2) * (2.0**5/sigma**3)
+    term5 = np.eye(d) * (2.0**3/sigma**2)
+
+    return k*(term1 - term2 - term3 - term4 + term5 + (2.0/sigma)**2)
+
 def rff_sample_basis(D, m, sigma):
     # rbf sampler is parametrised in gamma, which is at the same time
     # k(x,y) = \exp(-\gamma ||x-y||) and the standard deviation of the spectral density
