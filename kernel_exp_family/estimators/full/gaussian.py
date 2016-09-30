@@ -125,7 +125,7 @@ def compute_objective(X_test, X_train, sigma, alpha, beta):
     for a, x_a in enumerate(X_test):
         g = grad(x_a, X_train, sigma, alpha, beta)
         g2 = second_order_grad(x_a, X_train, sigma, alpha, beta)
-        objective += (0.5 * np.dot(g, g) + np.sum(g2) / N_test
+        objective += (0.5 * np.dot(g, g) + np.sum(g2)) / N_test
 
     return objective
 
