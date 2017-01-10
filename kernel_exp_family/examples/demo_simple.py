@@ -30,7 +30,7 @@ def get_KernelExpFullGaussian_instance(D, N):
     # arbitrary choice of parameters here
     sigma = 5.
     lmbda = 0.01
-    return KernelExpFullGaussian(sigma, lmbda, D, N)
+    return KernelExpFullGaussian(sigma, lmbda, D)
 
 class ground_truth():
     def __init__(self):
@@ -73,8 +73,8 @@ if __name__ == '__main__':
         est.fit(X)
         
         # main interface for log pdf and gradient
-        print est.log_pdf_multiple(np.random.randn(2, 2))
         print est.log_pdf(np.zeros(D))
+        print est.log_pdf_multiple(np.random.randn(2, 2))
         print est.grad(np.zeros(D))
         
         # score matching objective function (can be used for parameter tuning)

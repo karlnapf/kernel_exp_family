@@ -9,15 +9,20 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians, \
 
 import numpy as np
 
-
-def compute_h(data, sigma):
+def compute_h(data, sigma, basis=None):
+    if basis is None:
+        basis = data
+        
     n, d = data.shape
+    m, _ = basis.shape
+    
     h = np.zeros((n, d))
-    for b, x_b in enumerate(data):
-        for _, x_a in enumerate(data):
+    for _, x_a in enumerate(basis):
+        for b, x_b in enumerate(data):
             h[b, :] += np.sum(gaussian_kernel_dx_dx_dy(x_a, x_b, sigma), axis=0)
-            
-    return h.reshape(-1) / n
+    
+    # note: the missing division by N_data is done further downstream
+    return h.reshape(-1) / m
 
 
 def compute_lower_right_submatrix(all_hessians, N, lmbda):
@@ -29,28 +34,36 @@ def compute_first_row(h, all_hessians, n, lmbda):
 def compute_RHS(h, xi_norm_2):
     b = np.zeros(h.size + 1)
     b[0] = -xi_norm_2
-    b[1:] = -h.reshape(-1)
+    b[1:] = -h
 
     return b
 
-def compute_xi_norm_2(data, sigma):
+def compute_xi_norm_2(data, sigma, basis=None):
+    if basis is None:
+        basis = data
+        
     n, _ = data.shape
+    m, _ = basis.shape
     norm_2 = 0
-    for _, x_a in enumerate(data):
+    for _, x_a in enumerate(basis):
         for _, x_b in enumerate(data):
             norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
     
-    return norm_2 / n ** 2
+    return norm_2 / (n*m)
 
 
-def build_system(X, sigma, lmbda):
+def build_system(X, sigma, lmbda, basis=None):
+    if basis is None:
+        basis = X
+        
     n, d = X.shape
+    m, _ = basis.shape
     
-    h = compute_h(X, sigma)
-    all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
-    xi_norm_2 = compute_xi_norm_2(X, sigma)
+    h = compute_h(X, sigma, basis)
+    all_hessians = gaussian_kernel_hessians(X=basis, Y=X, sigma=sigma)
+    xi_norm_2 = compute_xi_norm_2(X, sigma, basis)
     
-    A = np.zeros((n * d + 1, n * d + 1))
+    A = np.zeros((m * d + 1, m * d + 1))
     A[0, 0] = np.dot(h, h) / n + lmbda * xi_norm_2
     A[1:, 1:] = compute_lower_right_submatrix(all_hessians, n, lmbda)
     
@@ -61,7 +74,10 @@ def build_system(X, sigma, lmbda):
     
     return A, b
 
-def fit(X, sigma, lmbda):
+def fit(X, sigma, lmbda, basis=None):
+    if basis is None:
+        basis = X
+        
     n, d = X.shape
     A, b = build_system(X, sigma, lmbda)
     x = np.linalg.solve(A, b)
@@ -69,48 +85,51 @@ def fit(X, sigma, lmbda):
     beta = x[1:].reshape(n, d)
     return alpha, beta
 
-def log_pdf(x, X, sigma, alpha, beta):
-    _, D = X.shape
+def log_pdf(x, basis, sigma, alpha, beta):
+    m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
-    N = len(X)
     
     SE_dx_dx_l = lambda x, y : gaussian_kernel_dx_dx(x, y.reshape(1, -1), sigma)
     SE_dx_l = lambda x, y: gaussian_kernel_grad(x, y.reshape(1, -1), sigma)
     
     xi = 0
     betasum = 0
-    for a in range(N):
-        x_a = X[a, :]
-        xi += np.sum(SE_dx_dx_l(x, x_a)) / N
+    for a in range(m):
+        x_a = basis[a]
+        xi += np.sum(SE_dx_dx_l(x, x_a)) / m
         gradient_x_xa = np.squeeze(SE_dx_l(x, x_a))
         betasum += np.dot(gradient_x_xa, beta[a, :])
     
     return np.float(alpha * xi + betasum)
 
-def grad(x, X, sigma, alpha, beta):
-    N, D = X.shape
+def grad(x, basis, sigma, alpha, beta):
+    m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
     
     xi_grad = 0
     betasum_grad = 0
-    for a, x_a in enumerate(X):
-        xi_grad += np.sum(gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma), axis=0) / N
+    for a, x_a in enumerate(basis):
+        xi_grad += np.sum(gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma), axis=0) / m
         left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
         betasum_grad += beta[a, :].dot(left_arg_hessian)
 
     return alpha * xi_grad + betasum_grad
 
-
-def second_order_grad(x, X, sigma, alpha, beta):
+def second_order_grad(x, X, sigma, alpha, beta, basis=None):
     """ Computes $\frac{\partial^2 log p(x)}{\partial x_i^2} """
-    N, D = X.shape
+    
+    if basis is None:
+        basis = X
+    
+    _, D = X.shape
+    m, _ = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
 
     xi_grad = 0
     betasum_grad = 0
-    for a, x_a in enumerate(X):
+    for a, x_a in enumerate(basis):
         xi_grad += np.sum(gaussian_kernel_dx_i_dx_i_dx_j_dx_j(x, x_a, sigma),
-                          axis=0) / N
+                          axis=0) / m
         left_arg_hessian = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
         betasum_grad += beta[a, :].dot(left_arg_hessian)
 
@@ -129,31 +148,33 @@ def compute_objective(X_test, X_train, sigma, alpha, beta):
     return objective
 
 class KernelExpFullGaussian(EstimatorBase):
-    def __init__(self, sigma, lmbda, D, N):
+    def __init__(self, sigma, lmbda, D, basis=None):
         self.sigma = sigma
         self.lmbda = lmbda
         self.D = D
-        self.N = N
+        self.basis = basis
         
         # initial RKHS function is flat
         self.alpha = 0
-        self.beta = np.zeros(D * N)
-        self.X = np.zeros((0, D))
+        self.beta = 0
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
+        if self.basis is None:
+            self.basis = X
+        
         self.X = X
         self.fit_wrapper_()
     
     @abstractmethod
     def fit_wrapper_(self):
-        self.alpha, self.beta = fit(self.X, self.sigma, self.lmbda)
+        self.alpha, self.beta = fit(self.X, self.sigma, self.lmbda, basis=self.basis)
     
     def log_pdf(self, x):
-        return log_pdf(x, self.X, self.sigma, self.alpha, self.beta)
+        return log_pdf(x, self.basis, self.sigma, self.alpha, self.beta)
 
     def grad(self, x):
-        return grad(x, self.X, self.sigma, self.alpha, self.beta)
+        return grad(x, self.basis, self.sigma, self.alpha, self.beta)
 
     def log_pdf_multiple(self, X):
         return np.array([self.log_pdf(x) for x in X])

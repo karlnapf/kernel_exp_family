@@ -7,7 +7,7 @@ from kernel_exp_family.estimators.full.develop.gaussian import build_system_loop
     grad_naive, compute_h_old_interface
 from kernel_exp_family.estimators.full.gaussian import build_system,\
     compute_lower_right_submatrix, compute_h, compute_RHS, log_pdf,\
-    second_order_grad, compute_objective, grad
+    second_order_grad, compute_objective, grad, fit
 from kernel_exp_family.kernels.develop.kernels import SE_dx_dy, SE_dx_dx_dy
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 import numpy as np
@@ -133,3 +133,23 @@ def test_compute_objective_execute():
     beta = np.random.randn(N, D)
 
     compute_objective(X_test, X_train, sigma, alpha, beta)
+
+def test_build_system_custom_basis_execute():
+    data, _, sigma, lmbda  = setup()
+    basis = np.random.randn(10, data.shape[1])
+    build_system(data, sigma, lmbda, basis=basis)
+
+def test_fit_custom_basis_execute():
+    data, _, sigma, lmbda  = setup()
+    basis = np.random.randn(10, data.shape[1])
+    fit(data, sigma, lmbda, basis=basis)
+
+def test_fit_custom_basis_equals_full_execute():
+    data, _, sigma, lmbda  = setup()
+    basis = data.copy()
+    alpha, beta = fit(data, sigma, lmbda, basis=basis)
+    alpha2, beta2 = fit(data, sigma, lmbda, basis=basis)
+    
+    assert_close(alpha, alpha2)
+    assert_close(beta, beta2)
+    

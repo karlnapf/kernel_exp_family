@@ -149,7 +149,7 @@ def gaussian_kernel_hessians(X, Y=None, sigma=1.0):
     N_x, d = X.shape
     all_hessians = None
 
-    if Y is None:
+    if Y is None or X is Y:
         all_hessians = np.zeros((N_x * d, N_x * d))
 
         for a, x_a in enumerate(X):
