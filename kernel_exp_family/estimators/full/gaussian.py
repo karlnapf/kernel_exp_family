@@ -17,7 +17,7 @@ def compute_h(data, sigma):
         for _, x_a in enumerate(data):
             h[b, :] += np.sum(gaussian_kernel_dx_dx_dy(x_a, x_b, sigma), axis=0)
             
-    return h / n
+    return h.reshape(-1) / n
 
 
 def compute_lower_right_submatrix(all_hessians, N, lmbda):
@@ -39,14 +39,14 @@ def compute_xi_norm_2(data, sigma):
     for _, x_a in enumerate(data):
         for _, x_b in enumerate(data):
             norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
-            
+    
     return norm_2 / n ** 2
 
 
 def build_system(X, sigma, lmbda):
     n, d = X.shape
     
-    h = compute_h(X, sigma).reshape(-1)
+    h = compute_h(X, sigma)
     all_hessians = gaussian_kernel_hessians(X, sigma=sigma)
     xi_norm_2 = compute_xi_norm_2(X, sigma)
     
@@ -116,7 +116,6 @@ def second_order_grad(x, X, sigma, alpha, beta):
 
     return alpha * xi_grad + betasum_grad
 
-
 def compute_objective(X_test, X_train, sigma, alpha, beta):
     N_test, D = X_test.shape
 
@@ -128,7 +127,6 @@ def compute_objective(X_test, X_train, sigma, alpha, beta):
         objective += (0.5 * np.dot(g, g) + np.sum(g2)) / N_test
 
     return objective
-
 
 class KernelExpFullGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, D, N):
@@ -144,7 +142,8 @@ class KernelExpFullGaussian(EstimatorBase):
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        self.fit_wrapper()
+        self.X = X
+        self.fit_wrapper_()
     
     @abstractmethod
     def fit_wrapper_(self):

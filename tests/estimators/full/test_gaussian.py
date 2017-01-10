@@ -106,7 +106,7 @@ def test_compute_h_equals_old_interface():
 
     kernel_dx_dx_dy = lambda x,y: SE_dx_dx_dy(x,y,l)
 
-    reference = compute_h_old_interface(kernel_dx_dx_dy, data)
+    reference = compute_h_old_interface(kernel_dx_dx_dy, data).reshape(-1)
     implementation = compute_h(data, sigma)
     
     assert_close(reference, implementation)
