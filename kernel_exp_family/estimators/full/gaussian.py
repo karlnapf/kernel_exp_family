@@ -144,15 +144,7 @@ class KernelExpFullGaussian(EstimatorBase):
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        
-        # sub-sample if data is larger than previously set N
-        if len(X) > self.N:
-            inds = np.random.permutation(len(X))[:self.N]
-            self.X = X[inds]
-        else:
-            self.X = np.copy(X)
-            
-        self.fit_wrapper_()
+        self.fit_wrapper()
     
     @abstractmethod
     def fit_wrapper_(self):

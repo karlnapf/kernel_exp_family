@@ -13,6 +13,8 @@ try:
 except ImportError:
     theano_available = False
 
+theano_available = False
+
 if theano_available:
     def get_expr_gaussian_kernel(x, y, sigma):
         return T.exp(-((x - y).norm(2) ** 2) / sigma)

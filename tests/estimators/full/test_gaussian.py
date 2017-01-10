@@ -2,12 +2,12 @@ from nose.tools import assert_almost_equal
 from numpy.ma.testutils import assert_close
 from numpy.testing.utils import assert_allclose
 
-from kernel_exp_family.estimators.full.develop.gaussian import compute_lower_right_submatrix_loop, \
-    compute_RHS_loop, log_pdf_naive, build_system_loop, compute_h_old_interface,\
-    grad_naive
-from kernel_exp_family.estimators.full.gaussian import build_system, \
-    compute_RHS, log_pdf, compute_lower_right_submatrix,\
-    compute_h, grad, compute_objective, second_order_grad
+from kernel_exp_family.estimators.full.develop.gaussian import build_system_loop,\
+    compute_lower_right_submatrix_loop, compute_RHS_loop, log_pdf_naive,\
+    grad_naive, compute_h_old_interface
+from kernel_exp_family.estimators.full.gaussian import build_system,\
+    compute_lower_right_submatrix, compute_h, compute_RHS, log_pdf,\
+    second_order_grad, compute_objective, grad
 from kernel_exp_family.kernels.develop.kernels import SE_dx_dy, SE_dx_dx_dy
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians
 import numpy as np
@@ -15,6 +15,7 @@ import numpy as np
 
 def setup(N=10, D=3):
     """ Generates some data and parameters """
+    print N
     sigma = np.random.randn()**2
     l = np.sqrt(np.float(sigma) / 2)
     lmbda = np.random.randn()**2
@@ -22,8 +23,7 @@ def setup(N=10, D=3):
     mean = np.random.randn(D)
     cov = np.random.rand(D,D)
     cov = np.dot(cov,cov.T)
-
-    data = np.random.multivariate_normal(mean, cov, size=N)
+    data = np.random.multivariate_normal(mean, cov, size=10)
 
     return data, l, sigma, lmbda
 
