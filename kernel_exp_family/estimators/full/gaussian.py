@@ -160,9 +160,6 @@ class KernelExpFullGaussian(EstimatorBase):
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        if self.basis is None:
-            self.basis = X
-        
         self.X = X
         self.fit_wrapper_()
     
