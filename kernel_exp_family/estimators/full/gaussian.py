@@ -1,5 +1,3 @@
-from abc import abstractmethod
-
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
 from kernel_exp_family.tools.assertions import assert_array_shape
 from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians, \
@@ -9,10 +7,7 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians, \
 
 import numpy as np
 
-def compute_h(data, sigma, basis=None):
-    if basis is None:
-        basis = data
-        
+def compute_h(basis, data, sigma):
     n, d = data.shape
     m, _ = basis.shape
     
@@ -24,65 +19,53 @@ def compute_h(data, sigma, basis=None):
     # note: the missing division by N_data is done further downstream
     return h.reshape(-1) / m
 
-
-def compute_lower_right_submatrix(all_hessians, N, lmbda):
-    return np.dot(all_hessians, all_hessians) / N + lmbda * all_hessians
-
-def compute_first_row(h, all_hessians, n, lmbda):
-    return np.dot(h, all_hessians) / n + lmbda * h
-
-def compute_RHS(h, xi_norm_2):
-    b = np.zeros(h.size + 1)
-    b[0] = -xi_norm_2
-    b[1:] = -h
-
-    return b
-
-def compute_xi_norm_2(data, sigma, basis=None):
-    if basis is None:
-        basis = data
-        
+def compute_xi_norm_2(basis, data, sigma):
     n, _ = data.shape
     m, _ = basis.shape
-    norm_2 = 0
+    norm_2 = 0.
     for _, x_a in enumerate(basis):
         for _, x_b in enumerate(data):
             norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
     
     return norm_2 / (n*m)
 
-
-def build_system(X, sigma, lmbda, basis=None):
-    if basis is None:
-        basis = X
-        
+def build_system(basis, X, sigma, lmbda):
     n, d = X.shape
     m, _ = basis.shape
     
-    h = compute_h(X, sigma, basis)
+    h = compute_h(basis, X, sigma)
     all_hessians = gaussian_kernel_hessians(X=basis, Y=X, sigma=sigma)
-    xi_norm_2 = compute_xi_norm_2(X, sigma, basis)
+    if basis is X:
+        h_reg = h
+        all_hessians_reg = all_hessians
+    else:
+        h_reg = compute_h(basis, basis, sigma)
+        all_hessians_reg = gaussian_kernel_hessians(X=basis, Y=basis, sigma=sigma)
+        
+    xi_norm_2 = compute_xi_norm_2(basis, X, sigma)
     
     A = np.zeros((m * d + 1, m * d + 1))
     A[0, 0] = np.dot(h, h) / n + lmbda * xi_norm_2
-    A[1:, 1:] = compute_lower_right_submatrix(all_hessians, n, lmbda)
+    A[1:, 1:] = np.dot(all_hessians, all_hessians.T) / n + lmbda * all_hessians_reg
     
-    A[0, 1:] = compute_first_row(h, all_hessians, n, lmbda)
+    A[0, 1:] = np.dot(all_hessians, h) / n + lmbda * h_reg
     A[1:, 0] = A[0, 1:]
     
-    b = compute_RHS(h, xi_norm_2)
+    b = np.zeros(m*d + 1)
+    b[0] = -xi_norm_2
+    b[1:] = -h_reg
     
     return A, b
 
-def fit(X, sigma, lmbda, basis=None):
-    if basis is None:
-        basis = X
-        
-    n, d = X.shape
-    A, b = build_system(X, sigma, lmbda)
+def fit(basis, X, sigma, lmbda):
+    m, d = basis.shape
+    A, b = build_system(basis, X, sigma, lmbda)
+    
+#     cho_lower = sp.linalg.cho_factor(A)
+#     x = sp.linalg.cho_solve(cho_lower, b)
     x = np.linalg.solve(A, b)
     alpha = x[0]
-    beta = x[1:].reshape(n, d)
+    beta = x[1:].reshape(m, d)
     return alpha, beta
 
 def log_pdf(x, basis, sigma, alpha, beta):
@@ -160,12 +143,10 @@ class KernelExpFullGaussian(EstimatorBase):
     
     def fit(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        self.X = X
-        self.fit_wrapper_()
-    
-    @abstractmethod
-    def fit_wrapper_(self):
-        self.alpha, self.beta = fit(self.X, self.sigma, self.lmbda, basis=self.basis)
+        if self.basis is None:
+            self.basis = X
+            
+        self.alpha, self.beta = fit(self.basis, X, self.sigma, self.lmbda)
     
     def log_pdf(self, x):
         return log_pdf(x, self.basis, self.sigma, self.alpha, self.beta)
@@ -173,9 +154,6 @@ class KernelExpFullGaussian(EstimatorBase):
     def grad(self, x):
         return grad(x, self.basis, self.sigma, self.alpha, self.beta)
 
-    def log_pdf_multiple(self, X):
-        return np.array([self.log_pdf(x) for x in X])
-    
     def objective(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         return compute_objective(X, self.X, self.sigma, self.alpha, self.beta)
