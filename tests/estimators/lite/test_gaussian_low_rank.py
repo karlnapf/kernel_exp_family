@@ -138,7 +138,7 @@ def test_fit_matches_sym():
     a = gaussian_low_rank.fit(Z, Z, sigma, lmbda, R.T, R_test.T)
     a_sym = develop_gaussian_low_rank.fit_sym(Z, sigma, lmbda, R.T)
     
-    assert_allclose(a, a_sym)
+    assert_allclose(a, a_sym, atol=1e-5)
 
 @timed(5)
 def test_fit_sym_time():

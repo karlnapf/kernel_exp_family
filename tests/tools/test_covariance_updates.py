@@ -69,7 +69,7 @@ def test_update_mean_cov_L_lmbda_converges_to_weighted_mean_and_cov():
     
     cov = np.dot(cov_L, cov_L.T)
     
-    assert_allclose(full_mean, mean)
+    assert_allclose(full_mean, mean, atol=1e-2)
     assert_allclose(full_cov, cov, atol=1e-2)
 
 def test_weights_to_lmbdas_single():
