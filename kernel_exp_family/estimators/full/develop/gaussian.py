@@ -65,6 +65,7 @@ def compute_RHS_loop(kernel_dx_dx_dy, data, xi_norm_2):
 
     b = np.zeros((n * d + 1, 1))
     b[0] = -xi_norm_2
+    print xi_norm_2
 
     h = compute_h_old_interface(kernel_dx_dx_dy, data)
     for a in range(n):
