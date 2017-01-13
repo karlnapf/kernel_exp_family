@@ -72,15 +72,12 @@ def log_pdf(x, basis, sigma, alpha, beta):
     m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
     
-    SE_dx_dx_l = lambda x, y : gaussian_kernel_dx_dx(x, y.reshape(1, -1), sigma)
-    SE_dx_l = lambda x, y: gaussian_kernel_grad(x, y.reshape(1, -1), sigma)
-    
     xi = 0
     betasum = 0
     for a in range(m):
-        x_a = basis[a]
-        xi += np.sum(SE_dx_dx_l(x, x_a)) / m
-        gradient_x_xa = np.squeeze(SE_dx_l(x, x_a))
+        x_a = np.atleast_2d(basis[a])
+        xi += np.sum(gaussian_kernel_dx_dx(x, x_a, sigma)) / m
+        gradient_x_xa = gaussian_kernel_grad(x, x_a, sigma)
         betasum += np.dot(gradient_x_xa, beta[a, :])
     
     return np.float(alpha * xi + betasum)
