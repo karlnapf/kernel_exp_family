@@ -82,6 +82,29 @@ def log_pdf(x, basis, sigma, alpha, beta):
     
     return np.float(alpha * xi + betasum)
 
+def xi_log_pdf(x, basis, sigma, alpha):
+    m, D = basis.shape
+    assert_array_shape(x, ndim=1, dims={0: D})
+    
+    xi = 0
+    for a in range(m):
+        x_a = np.atleast_2d(basis[a])
+        xi += np.sum(gaussian_kernel_dx_dx(x, x_a, sigma)) / m
+    
+    return xi
+
+def betasum_log_pdf(x, basis, sigma, beta):
+    m, D = basis.shape
+    assert_array_shape(x, ndim=1, dims={0: D})
+    
+    betasum = 0
+    for a in range(m):
+        x_a = np.atleast_2d(basis[a])
+        gradient_x_xa = gaussian_kernel_grad(x, x_a, sigma)
+        betasum += np.dot(gradient_x_xa, beta[a, :])
+    
+    return betasum
+
 def grad(x, basis, sigma, alpha, beta):
     m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
@@ -95,14 +118,9 @@ def grad(x, basis, sigma, alpha, beta):
 
     return alpha * xi_grad + betasum_grad
 
-def second_order_grad(x, X, sigma, alpha, beta, basis=None):
+def second_order_grad(x, basis, sigma, alpha, beta):
     """ Computes $\frac{\partial^2 log p(x)}{\partial x_i^2} """
-    
-    if basis is None:
-        basis = X
-    
-    _, D = X.shape
-    m, _ = basis.shape
+    m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
 
     xi_grad = 0
@@ -115,14 +133,14 @@ def second_order_grad(x, X, sigma, alpha, beta, basis=None):
 
     return alpha * xi_grad + betasum_grad
 
-def compute_objective(X_test, X_train, sigma, alpha, beta):
-    N_test, D = X_test.shape
+def compute_objective(X, basis, sigma, alpha, beta):
+    N_test, _ = X.shape
 
     objective = 0.0
 
-    for a, x_a in enumerate(X_test):
-        g = grad(x_a, X_train, sigma, alpha, beta)
-        g2 = second_order_grad(x_a, X_train, sigma, alpha, beta)
+    for _, x_a in enumerate(X):
+        g = grad(x_a, basis, sigma, alpha, beta)
+        g2 = second_order_grad(x_a, basis, sigma, alpha, beta)
         objective += (0.5 * np.dot(g, g) + np.sum(g2)) / N_test
 
     return objective
@@ -153,7 +171,7 @@ class KernelExpFullGaussian(EstimatorBase):
 
     def objective(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        return compute_objective(X, self.X, self.sigma, self.alpha, self.beta)
+        return compute_objective(X, self.basis, self.sigma, self.alpha, self.beta)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']

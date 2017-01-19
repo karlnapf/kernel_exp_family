@@ -21,7 +21,7 @@ class EstimatorBase(object):
         return False
     
     def log_pdf_multiple(self, X):
-        raise NotImplementedError()
+        return np.array([self.log_pdf(x) for x in X])
     
     def log_pdf(self, x):
         raise NotImplementedError()
