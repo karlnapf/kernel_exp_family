@@ -128,7 +128,7 @@ if __name__ == "__main__":
     data[y] = np.ones(d)
     
     # checked matches go here
-    if False:
+    if True:
         print "gaussian_kernel_graph"
         print sess.run(gaussian_kernel_graph(x,y), feed_dict=data)
         print gaussian_kernel(np.atleast_2d(data[x]), np.atleast_2d(data[y]), sigma=sigma)
