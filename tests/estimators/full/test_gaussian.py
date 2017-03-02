@@ -70,3 +70,23 @@ def test_compute_objective_equals_deprecated():
     o = compute_objective(data, basis, sigma, lmbda, beta)
     o_deprecated = gaussian_depracated.compute_objective(data, basis, sigma, alpha_deprecated, beta_deprecated)
     assert_close(o, o_deprecated)
+
+def test_fit_nystrom_execute():
+    data, _, sigma, lmbda = setup()
+    inds = np.random.permutation(data.shape[0])[:data.shape[0] / 2]
+    basis = data[inds].copy()
+    
+    fit(basis, data, sigma, lmbda)
+
+def test_log_pdf_grad_second_order_grad_objective_nystrom_execute():
+    data, _, sigma, lmbda = setup()
+    inds = np.random.permutation(data.shape[0])[:data.shape[0] / 2]
+    basis = data[inds].copy()
+    
+    beta = fit(basis, data, sigma, lmbda)
+    for x in data:
+        log_pdf(x, basis, sigma, lmbda, beta)
+        grad(x, basis, sigma, lmbda, beta)
+        second_order_grad(x, basis, sigma, lmbda, beta)
+    
+    compute_objective(data, basis, sigma, lmbda, beta)
