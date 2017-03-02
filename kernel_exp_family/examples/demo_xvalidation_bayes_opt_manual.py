@@ -1,13 +1,22 @@
 from kernel_exp_family.estimators.finite.gaussian import KernelExpFiniteGaussian
 from kernel_exp_family.estimators.lite.gaussian import KernelExpLiteGaussian
-from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch,\
-    plot_bayesopt_model_1d
+try:
+    from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch, plot_bayesopt_model_1d
+    have_bayes_opt_search=True
+except ImportError:
+    have_bayes_opt_search=False
+    
 from kernel_exp_family.examples.tools import visualise_fit_2d
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 if __name__ == '__main__':
+    if not have_bayes_opt_search:
+        print("Dependencies for bayesian optimization not found, exiting.")
+        exit()
+    
+    
     """
     This simple demo demonstrates how to select the kernel parameter for the lite
     estimator, based on a Bayesian optimisation black-box optimiser.

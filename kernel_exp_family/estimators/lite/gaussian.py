@@ -1,7 +1,11 @@
 from abc import abstractmethod
 
 from kernel_exp_family.estimators.estimator_oop import EstimatorBase
-from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
+try:
+    from kernel_exp_family.estimators.parameter_search_bo import BayesOptSearch
+    have_bayes_opt_search=True
+except ImportError:
+    have_bayes_opt_search=False
 from kernel_exp_family.kernels.kernels import gaussian_kernel, \
     gaussian_kernel_grad, theano_available
 from kernel_exp_family.tools.assertions import assert_array_shape
