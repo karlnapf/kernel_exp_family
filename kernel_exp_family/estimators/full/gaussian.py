@@ -6,6 +6,7 @@ from kernel_exp_family.kernels.kernels import gaussian_kernel_hessians, \
     gaussian_kernel_dx_i_dx_i_dx_j_dx_j
 
 import numpy as np
+import scipy as sp
 
 def compute_h(basis, data, sigma):
     n, d = data.shape
@@ -27,48 +28,35 @@ def compute_xi_norm_2(basis, data, sigma):
         for _, x_b in enumerate(data):
             norm_2 += np.sum(gaussian_kernel_dx_dx_dy_dy(x_a, x_b, sigma))
     
-    return norm_2 / (n*m)
-
-def build_system(basis, X, sigma, lmbda):
-    n, d = X.shape
-    m, _ = basis.shape
-    
-    h = compute_h(basis, X, sigma)
-    all_hessians = gaussian_kernel_hessians(X=basis, Y=X, sigma=sigma)
-    if basis is X:
-        h_reg = h
-        all_hessians_reg = all_hessians
-    else:
-        h_reg = compute_h(basis, basis, sigma)
-        all_hessians_reg = gaussian_kernel_hessians(X=basis, Y=basis, sigma=sigma)
-        
-    xi_norm_2 = compute_xi_norm_2(basis, X, sigma)
-    
-    A = np.zeros((m * d + 1, m * d + 1))
-    A[0, 0] = np.dot(h, h) / n + lmbda * xi_norm_2
-    A[1:, 1:] = np.dot(all_hessians, all_hessians.T) / n + lmbda * all_hessians_reg
-    
-    A[0, 1:] = np.dot(all_hessians, h) / n + lmbda * h_reg
-    A[1:, 0] = A[0, 1:]
-    
-    b = np.zeros(m*d + 1)
-    b[0] = -xi_norm_2
-    b[1:] = -h_reg
-    
-    return A, b
+    return norm_2 / (n * m)
 
 def fit(basis, X, sigma, lmbda):
     m, d = basis.shape
-    A, b = build_system(basis, X, sigma, lmbda)
+    n, _ = X.shape
     
-#     cho_lower = sp.linalg.cho_factor(A)
-#     x = sp.linalg.cho_solve(cho_lower, b)
-    x = np.linalg.solve(A, b)
-    alpha = x[0]
-    beta = x[1:].reshape(m, d)
-    return alpha, beta
+    G = gaussian_kernel_hessians(X=basis, Y=X, sigma=sigma)
+    h = compute_h(basis, X, sigma)
+    if basis is X:
+        # full estimator, no approximation
+        np.fill_diagonal(G, np.diag(G) + n * lmbda)
+        
+        cho_lower = sp.linalg.cho_factor(G)
+        beta = sp.linalg.cho_solve(cho_lower, h / lmbda)
+    else:
+        # e.g. nystrom estimator
+        G_mn = G
+        
+        # TODO if sub-sampling is used, can avoid the re-computing here
+        G_mm = gaussian_kernel_hessians(X=basis, Y=basis, sigma=sigma)
+        
+        # TODO compare least squares pinv vs SVD pinv2
+        G_dagger = sp.linalg.pinv2(np.dot(G_mn, G_mn.T) + lmbda * n * G_mm)
+        
+        beta = np.dot(G_dagger, np.dot(G_mn, h / lmbda))
+    
+    return beta.reshape(m, d)
 
-def log_pdf(x, basis, sigma, alpha, beta):
+def log_pdf(x, basis, sigma, lmbda, beta):
     m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
     
@@ -80,32 +68,9 @@ def log_pdf(x, basis, sigma, alpha, beta):
         gradient_x_xa = gaussian_kernel_grad(x, x_a, sigma)
         betasum += np.dot(gradient_x_xa, beta[a, :])
     
-    return np.float(alpha * xi + betasum)
+    return np.float(-1.0 / lmbda * xi + betasum)
 
-def xi_log_pdf(x, basis, sigma, alpha):
-    m, D = basis.shape
-    assert_array_shape(x, ndim=1, dims={0: D})
-    
-    xi = 0
-    for a in range(m):
-        x_a = np.atleast_2d(basis[a])
-        xi += np.sum(gaussian_kernel_dx_dx(x, x_a, sigma)) / m
-    
-    return xi
-
-def betasum_log_pdf(x, basis, sigma, beta):
-    m, D = basis.shape
-    assert_array_shape(x, ndim=1, dims={0: D})
-    
-    betasum = 0
-    for a in range(m):
-        x_a = np.atleast_2d(basis[a])
-        gradient_x_xa = gaussian_kernel_grad(x, x_a, sigma)
-        betasum += np.dot(gradient_x_xa, beta[a, :])
-    
-    return betasum
-
-def grad(x, basis, sigma, alpha, beta):
+def grad(x, basis, sigma, lmbda, beta):
     m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
     
@@ -116,9 +81,9 @@ def grad(x, basis, sigma, alpha, beta):
         left_arg_hessian = gaussian_kernel_dx_i_dx_j(x, x_a, sigma)
         betasum_grad += beta[a, :].dot(left_arg_hessian)
 
-    return alpha * xi_grad + betasum_grad
+    return -1.0 / lmbda * xi_grad + betasum_grad
 
-def second_order_grad(x, basis, sigma, alpha, beta):
+def second_order_grad(x, basis, sigma, lmbda, beta):
     """ Computes $\frac{\partial^2 log p(x)}{\partial x_i^2} """
     m, D = basis.shape
     assert_array_shape(x, ndim=1, dims={0: D})
@@ -131,16 +96,16 @@ def second_order_grad(x, basis, sigma, alpha, beta):
         left_arg_hessian = gaussian_kernel_dx_i_dx_i_dx_j(x, x_a, sigma)
         betasum_grad += beta[a, :].dot(left_arg_hessian)
 
-    return alpha * xi_grad + betasum_grad
+    return -1.0 / lmbda * xi_grad + betasum_grad
 
-def compute_objective(X, basis, sigma, alpha, beta):
+def compute_objective(X, basis, sigma, lmbda, beta):
     N_test, _ = X.shape
 
     objective = 0.0
 
     for _, x_a in enumerate(X):
-        g = grad(x_a, basis, sigma, alpha, beta)
-        g2 = second_order_grad(x_a, basis, sigma, alpha, beta)
+        g = grad(x_a, basis, sigma, lmbda, beta)
+        g2 = second_order_grad(x_a, basis, sigma, lmbda, beta)
         objective += (0.5 * np.dot(g, g) + np.sum(g2)) / N_test
 
     return objective
@@ -153,7 +118,6 @@ class KernelExpFullGaussian(EstimatorBase):
         self.basis = basis
         
         # initial RKHS function is flat
-        self.alpha = 0
         self.beta = 0
     
     def fit(self, X):
@@ -161,17 +125,17 @@ class KernelExpFullGaussian(EstimatorBase):
         if self.basis is None:
             self.basis = X
             
-        self.alpha, self.beta = fit(self.basis, X, self.sigma, self.lmbda)
+        self.beta = fit(self.basis, X, self.sigma, self.lmbda)
     
     def log_pdf(self, x):
-        return log_pdf(x, self.basis, self.sigma, self.alpha, self.beta)
+        return log_pdf(x, self.basis, self.sigma, self.lmbda, self.beta)
 
     def grad(self, x):
-        return grad(x, self.basis, self.sigma, self.alpha, self.beta)
+        return grad(x, self.basis, self.sigma, self.lmbda, self.beta)
 
     def objective(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
-        return compute_objective(X, self.basis, self.sigma, self.alpha, self.beta)
+        return compute_objective(X, self.basis, self.sigma, self.lmbda, self.beta)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']
