@@ -70,7 +70,7 @@ def compute_C(X, Y, K, sigma):
     
     return C
 
-def fit(X, Y, sigma, lmbda, K=None):
+def fit(X, Y, sigma, lmbda, K=None, reg_f_norm=True, reg_alpha_norm=True):
         # compute kernel matrix if needed
         if K is None:
             K = gaussian_kernel(X, Y, sigma=sigma)
@@ -78,9 +78,18 @@ def fit(X, Y, sigma, lmbda, K=None):
         b = compute_b(X, Y, K, sigma)
         C = compute_C(X, Y, K, sigma)
 
-        # solve regularised linear system
-        a = -sigma / 2. * np.linalg.solve(C + (K + np.eye(len(C))) * lmbda,
-                                          b)
+        reg_mat = np.zeros(np.size(K))
+        if reg_f_norm:
+            reg_mat += K
+        
+        if reg_alpha_norm:
+            reg_mat += np.eye(len(K))
+        
+        if (reg_f_norm or reg_alpha_norm) and (lmbda>0):
+            C += reg_mat * lmbda
+            
+        # solve (potentially regularised) linear system
+        a = -sigma / 2. * np.linalg.solve(C, b)
         
         return a
     
@@ -113,11 +122,14 @@ def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None):
     return J
 
 class KernelExpLiteGaussian(EstimatorBase):
-    def __init__(self, sigma, lmbda, D, N):
+    def __init__(self, sigma, lmbda, D, N,
+                 reg_f_norm=True, reg_alpha_norm=True):
         self.sigma = sigma
         self.lmbda = lmbda
         self.D = D
         self.N = N
+        self.reg_f_norm = reg_f_norm
+        self.reg_alpha_norm = reg_alpha_norm
         
         # initial RKHS function is flat
         self.alpha = np.zeros(0)
@@ -128,6 +140,7 @@ class KernelExpLiteGaussian(EstimatorBase):
         
         # sub-sample if data is larger than previously set N
         if len(X) > self.N:
+            logger.info("Sub-sampling %d/%d data." % (self.N, len(X)))
             inds = np.random.permutation(len(X))[:self.N]
             self.X = X[inds]
         else:
@@ -138,7 +151,8 @@ class KernelExpLiteGaussian(EstimatorBase):
     @abstractmethod
     def fit_wrapper_(self):
         self.K = gaussian_kernel(self.X, sigma=self.sigma)
-        return fit(self.X, self.X, self.sigma, self.lmbda, self.K)
+        return fit(self.X, self.X, self.sigma, self.lmbda, self.K,
+                   self.reg_f_norm, self.reg_alpha_norm)
     
     def log_pdf(self, x):
         assert_array_shape(x, ndim=1, dims={0: self.D})
