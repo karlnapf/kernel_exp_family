@@ -78,7 +78,7 @@ def fit(X, Y, sigma, lmbda, K=None, reg_f_norm=True, reg_alpha_norm=True):
         b = compute_b(X, Y, K, sigma)
         C = compute_C(X, Y, K, sigma)
 
-        reg_mat = np.zeros(np.size(K))
+        reg_mat = np.zeros(np.shape(K))
         if reg_f_norm:
             reg_mat += K
         
@@ -151,8 +151,9 @@ class KernelExpLiteGaussian(EstimatorBase):
     @abstractmethod
     def fit_wrapper_(self):
         self.K = gaussian_kernel(self.X, sigma=self.sigma)
-        return fit(self.X, self.X, self.sigma, self.lmbda, self.K,
-                   self.reg_f_norm, self.reg_alpha_norm)
+        return fit(X=self.X, Y=self.X, sigma=self.sigma, lmbda=self.lmbda,
+                   K=self.K,
+                   reg_f_norm=self.reg_f_norm, reg_alpha_norm=self.reg_alpha_norm)
     
     def log_pdf(self, x):
         assert_array_shape(x, ndim=1, dims={0: self.D})
