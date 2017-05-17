@@ -93,8 +93,7 @@ def fit(X, Y, sigma, lmbda, K=None, reg_f_norm=True, reg_alpha_norm=True):
         
         return a
     
-def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None,
-              reg_f_norm=True, reg_alpha_norm=True):
+def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None):
     if K_XY is None:
         K_XY = gaussian_kernel(X, Y, sigma=sigma)
     
@@ -113,23 +112,17 @@ def objective(X, Y, sigma, lmbda, alpha, K=None, K_XY=None, b=None, C=None,
     
     NX = len(X)
     first = 2. / (NX * sigma) * alpha.dot(b)
-    if lmbda > 0:
-        reg_mat = np.zeros(np.shape(K))
-        if reg_f_norm:
-            reg_mat += K
-        
-        if reg_alpha_norm:
-            reg_mat += np.eye(len(K))
-
-        second = 2. / (NX * sigma ** 2) * alpha.dot((C + reg_mat* lmbda).dot(alpha))
-    else:
-        second = 2. / (NX * sigma ** 2) * alpha.dot((C).dot(alpha))
+    second = 2. / (NX * sigma ** 2) * alpha.dot((C).dot(alpha))
     J = first + second
     return J
 
 class KernelExpLiteGaussian(EstimatorBase):
     def __init__(self, sigma, lmbda, D, N,
                  reg_f_norm=True, reg_alpha_norm=True):
+        
+        assert lmbda>0
+        assert sigma>0
+        
         self.sigma = sigma
         self.lmbda = lmbda
         self.D = D
@@ -211,9 +204,7 @@ class KernelExpLiteGaussian(EstimatorBase):
     def objective(self, X):
         assert_array_shape(X, ndim=2, dims={1: self.D})
         
-        return objective(self.X, X, self.sigma, self.lmbda, self.alpha, self.K,
-                         reg_f_norm=self.reg_f_norm,
-                         reg_alpha_norm=self.reg_alpha_norm)
+        return objective(self.X, X, self.sigma, self.lmbda, self.alpha, self.K)
 
     def get_parameter_names(self):
         return ['sigma', 'lmbda']
